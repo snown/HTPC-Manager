@@ -31,6 +31,7 @@ class Vnstat(object):
                 {"type": "bool", "label": "Enable", "name": "vnstat_enable"},
                 {"type": "text", "label": "Menu name", "name": "vnstat_name"},
                 {"type": "bool", "label": "Use ssh?", 'desc': 'Used if vnstat is running on a different computer', "name": "vnstat_use_ssh"},
+                {"type": "text", "label": "Vnstat command", "placeholder": "", "name": "vnstat_cmd"},
                 {"type": "text", "label": "IP / Host", "placeholder": "localhost", "name": "vnstat_host"},
                 {"type": "text", "label": "Username", "name": "vnstat_username"},
                 {"type": "password", "label": "Password", "name": "vnstat_password"},
@@ -104,6 +105,7 @@ class Vnstat(object):
                     else:
                         return output.strip()
 
+    # Add a dropdown where users can choose parameter in dropdown?
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
