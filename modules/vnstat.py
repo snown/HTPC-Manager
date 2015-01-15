@@ -54,6 +54,10 @@ class Vnstat(object):
             username = htpc.settings.get('vnstat_username', '')
             password = htpc.settings.get('vnstat_password', '')
 
+            # If db saves the shit as a string
+            if port:
+                port = int(port)
+
             if not parameters:
                 return
 
