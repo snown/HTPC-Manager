@@ -49,10 +49,10 @@ class Vnstat(object):
     @require()
     def run(self, parameters=''):
         if htpc.settings.get('vnstat_enable'):
-            hostname = htpc.settings.get('vnstat_host')
-            port = htpc.settings.get('vnstat_port')
-            username = htpc.settings.get('vnstat_username')
-            password = htpc.settings.get('vnstat_password')
+            hostname = htpc.settings.get('vnstat_host', '')
+            port = htpc.settings.get('vnstat_port', 22)
+            username = htpc.settings.get('vnstat_username', '')
+            password = htpc.settings.get('vnstat_password', '')
 
             if not parameters:
                 return
