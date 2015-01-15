@@ -1,6 +1,8 @@
 
 $(document).ready(function(){
 	ajaxload()
+	get_currentspeed()
+
 	//loaddb3()
 });
 
@@ -32,12 +34,24 @@ function makeArrayDate2(ary) {
 
 }
 
+function get_currentspeed() {
+	$.get(WEBDIR + 'vnstat/tr', function(data) {
+		if (data.rx && data.tx) {
+			$("#vnstat-rx").text(data.rx);
+			$("#vnstat-tx").text(data.tx);
+
+		} else {
+			return
+		}
+
+	})
+}
 
 // loads from db and makes html
 function ajaxload() {
     $.ajax({
     	// change url to test
-        url: WEBDIR + 'vnstat/day',
+        url: WEBDIR + 'vnstat/dumpdb',
         async: false,
         success: function (data) {
         	t = $('.content')
@@ -75,13 +89,13 @@ function ajaxload() {
 
     });
 
-    loaddb3()
+    loaddb()
 }
 
 
-function loaddb3() {
+function loaddb() {
     $.ajax({
-        url: WEBDIR + 'vnstat/day',
+        url: WEBDIR + 'vnstat/dumpdb',
         async: false,
         success: function (data) {
         	var interf = data["vnstat"]["interface"]
@@ -178,7 +192,7 @@ function makechart2(selector, interfaceid, d) {
 	new Chart(ctx).Line(data, options);
 }
 
-// grab form default.js instead?
+// grab form default.js instead? use math.pow
 function getReadableFileSizeString(fileSizeInBytes) {
     var i = -1;
     var byteUnits = [' kB', ' MB', ' GB', ' TB', 'PB'];

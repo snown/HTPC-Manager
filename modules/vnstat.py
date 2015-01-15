@@ -8,13 +8,13 @@ from cherrypy.lib.auth2 import require
 import xmltodict
 import platform
 import subprocess
+import re
 
 try:
     import paramiko
     importParamiko = True
 
 except ImportError:
-    #logger.error("Could't import psutil. See https://raw.githubusercontent.com/giampaolo/psutil/master/INSTALL.rst")
     importParamiko = False
 
 
@@ -30,8 +30,8 @@ class Vnstat(object):
             "fields": [
                 {"type": "bool", "label": "Enable", "name": "vnstat_enable"},
                 {"type": "text", "label": "Menu name", "name": "vnstat_name"},
-                {"type": "bool", "label": "Use ssh?", 'desc': 'Used if vnstat is running on a different computer', "name": "vnstat_use_ssh"},
-                {"type": "text", "label": "Vnstat command", "placeholder": "", "name": "vnstat_cmd"},
+                {"type": "bool", "label": "Use SSH?", 'desc': 'Used if vnstat is running on a different computer', "name": "vnstat_use_ssh"},
+                {"type": "text", "label": "Vnstat DB location", "placeholder": "", "name": "vnstat_db"},
                 {"type": "text", "label": "IP / Host", "placeholder": "localhost", "name": "vnstat_host"},
                 {"type": "text", "label": "Username", "name": "vnstat_username"},
                 {"type": "password", "label": "Password", "name": "vnstat_password"},
@@ -41,23 +41,24 @@ class Vnstat(object):
 
     @cherrypy.expose()
     @require()
-    #@cherrypy.tools.json_out()
     def index(self):
         return htpc.LOOKUP.get_template('vnstat.html').render(scriptname='vnstat', importParamiko=importParamiko)
 
     @cherrypy.expose()
     @require()
-    def run(self, cmd=''):
+    def run(self, parameters=''):
         if htpc.settings.get('vnstat_enable'):
 
-            if not cmd:
+            if not parameters:
                 return
+
+            if htpc.settings.get('vnstat_db', ''):
+                cmd = "vnstat %s %s" % (htpc.settings.get('vnstat_db', ''), parameters)
+            else:
+                cmd = "vnstat %s" % parameters
 
             # Force windows users to use paramiko as here isnt any native ssh.
             if htpc.settings.get('vnstat_use_ssh') or platform.system() == 'win32':
-
-
-                self.logger.debug('vnstat ssh %s' % cmd)
 
                 hostname = htpc.settings.get('vnstat_host')
                 username = htpc.settings.get('vnstat_username')
@@ -109,23 +110,66 @@ class Vnstat(object):
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def day(self):
-        return self.run('vnstat -d --xml')
+    def days(self):
+        return self.run('-d --xml')
 
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def live(self):
-        # cant parse this. fix it
-        r = self.run('vnstat -tr')#
-        return r.strip(' \t\n\r')
-
+    def hours(self):
+        return self.run('-h --xml')
 
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def dump(self):
-        return self.run('vnstat --dumpdb --xml')
+    def exportdb(self):
+        return self.run('--exportdb')
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
+    def oneline(self):
+        return self.run('--oneline')
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
+    def cleartop(self):
+        return self.run('--cleartop')
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
+    def weeks(self):
+        return self.run('-w --xml')
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
+    def tr(self):
+        piped = self.run('-tr')
+        download = re.compile(ur'rx\s+(\d+.\d+)\s+(\w+\/s)')
+        upload = re.compile(ur'tx\s+(\d+.\d+)\s+(\w+\/s)')
+        rx = re.search(download, piped)
+        tx = re.search(upload, piped)
+        if rx:
+            rx = '%s %s' % (rx.group(1), rx.group(2))
+        if tx:
+            tx = '%s %s' % (tx.group(1), tx.group(2))
+
+        return {'rx': rx, 'tx': tx}
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
+    def top10(self):
+        return self.run('-t --xml')
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
+    def dumpdb(self):
+        return self.run('--dumpdb --xml')
 
     @cherrypy.expose()
     @require()
