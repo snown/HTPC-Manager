@@ -62,7 +62,7 @@ class Vnstat(object):
                 return
 
             if htpc.settings.get('vnstat_db', ''):
-                cmd = "vnstat %s %s" % (htpc.settings.get('vnstat_db', ''), parameters)
+                cmd = "vnstat --dbdir %s %s" % (htpc.settings.get('vnstat_db', ''), parameters)
             else:
                 cmd = "vnstat %s" % parameters
 
