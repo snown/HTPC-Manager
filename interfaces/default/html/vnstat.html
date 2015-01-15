@@ -1,4 +1,5 @@
 <%inherit file="base.html"/>
+<% import platform %>
 <% settings = self.attr.settings %>
 <div class="container-fluid">
   <div class="content">
@@ -11,7 +12,7 @@
       </small>
     </h1>
 
-    % if not importParamiko:
+    % if not importParamiko and platform.system() == 'win32':
     <div class="row-fluid">
       <div class="alert alert-error">
         <h4>Paramiko is was not found on your system</h4>
