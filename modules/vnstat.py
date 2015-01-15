@@ -93,7 +93,8 @@ class Vnstat(object):
 
                 # Make json of shitty xml
                 if '--xml' in cmd:
-                    return xmltodict.parse(''.join(stdout_data))
+                    shit = ''.join(stdout_data)
+                    return xmltodict.parse(shit.strip())
                 else:
                     return ''.join(stdout_data)
 
