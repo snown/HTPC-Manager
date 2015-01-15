@@ -184,7 +184,7 @@ class Vnstat(object):
     @require()
     @cherrypy.tools.json_out()
     def dumpdb(self):
-        return self.run('--exportdb --xml')
+        return self.run('--dumpdb --xml')
 
     @cherrypy.expose()
     @require()
