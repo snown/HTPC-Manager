@@ -33,6 +33,7 @@ class Vnstat(object):
                 {"type": "bool", "label": "Use SSH?", 'desc': 'Used if vnstat is running on a different computer', "name": "vnstat_use_ssh"},
                 {"type": "text", "label": "Vnstat DB location", "placeholder": "", "name": "vnstat_db"},
                 {"type": "text", "label": "IP / Host", "placeholder": "localhost", "name": "vnstat_host"},
+                {"type": "text", "label": "port", "name": "vnstat_port"},
                 {"type": "text", "label": "Username", "name": "vnstat_username"},
                 {"type": "password", "label": "Password", "name": "vnstat_password"},
 
@@ -48,6 +49,10 @@ class Vnstat(object):
     @require()
     def run(self, parameters=''):
         if htpc.settings.get('vnstat_enable'):
+            hostname = htpc.settings.get('vnstat_host')
+            port = htpc.settings.get('vnstat_port')
+            username = htpc.settings.get('vnstat_username')
+            password = htpc.settings.get('vnstat_password')
 
             if not parameters:
                 return
@@ -59,12 +64,7 @@ class Vnstat(object):
 
             # Force windows users to use paramiko as here isnt any native ssh.
             if htpc.settings.get('vnstat_use_ssh') or platform.system() == 'win32':
-
-                hostname = htpc.settings.get('vnstat_host')
-                username = htpc.settings.get('vnstat_username')
-                password = htpc.settings.get('vnstat_password')
-
-                client = paramiko.Transport((hostname, 22))
+                client = paramiko.Transport((hostname, port))
                 client.connect(username=username, password=password)
 
                 stdout_data = []
@@ -93,10 +93,19 @@ class Vnstat(object):
                 else:
                     return ''.join(stdout_data)
 
+            """
             else:
                 # vnstat is running on the same computer as htpc manager
                 self.logger.debug('Pipeing %s from shell' % cmd)
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                s = ""
+                if hostname and port:
+                    s = "%s %s" % (hostname, port)
+                if username and password:
+                    s += "%s@%s" % (username, password)
+
+                fullcmd = "ssh %s %s" (s, cmd)
+                print fullcmd
+                proc = subprocess.Popen(fullcmd, stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, shell=True, cwd=htpc.RUNDIR)
                 output, err = proc.communicate()
                 returncode = proc.returncode
@@ -106,6 +115,7 @@ class Vnstat(object):
                         return xmltodict.parse(output.strip())
                     else:
                         return output.strip()
+            """
 
     # Add a dropdown where users can choose parameter in dropdown?
     @cherrypy.expose()
@@ -170,7 +180,7 @@ class Vnstat(object):
     @require()
     @cherrypy.tools.json_out()
     def dumpdb(self):
-        return self.run('--dumpdb --xml')
+        return self.run('--exportdb --xml')
 
     @cherrypy.expose()
     @require()
