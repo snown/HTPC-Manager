@@ -190,7 +190,7 @@ class Vnstat(object):
     @require()
     @cherrypy.tools.json_out()
     def smdion(self):
-        z = """<vnstat version="1.11" xmlversion="1">
+        z = '''<vnstat version="1.11" xmlversion="1">
              <interface id="em0">
               <id>em0</id>
               <nick>em0</nick>
@@ -284,7 +284,8 @@ class Vnstat(object):
                </hours>
               </traffic>
              </interface>
-            </vnstat> """
+            </vnstat> '''
+        return xmltodict.parse(z)
 
     @cherrypy.expose()
     @require()
