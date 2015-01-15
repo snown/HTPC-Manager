@@ -189,6 +189,106 @@ class Vnstat(object):
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
+    def smdion(self):
+        z = """<vnstat version="1.11" xmlversion="1">
+             <interface id="em0">
+              <id>em0</id>
+              <nick>em0</nick>
+              <created><date><year>2014</year><month>01</month><day>27</day></date></created>
+              <updated><date><year>2015</year><month>01</month><day>15</day></date><time><hour>17</hour><minute>17</minute></time></updated>
+              <traffic>
+               <total><rx>12413196993</rx><tx>1607225066</tx></total>
+               <days>
+                <day id="0"><date><year>2015</year><month>01</month><day>15</day></date><rx>4365514</rx><tx>317338</tx></day>
+                <day id="1"><date><year>2015</year><month>01</month><day>14</day></date><rx>8721689</rx><tx>2023501</tx></day>
+                <day id="2"><date><year>2015</year><month>01</month><day>13</day></date><rx>8984274</rx><tx>3303172</tx></day>
+                <day id="3"><date><year>2015</year><month>01</month><day>12</day></date><rx>5912957</rx><tx>1874235</tx></day>
+                <day id="4"><date><year>2015</year><month>01</month><day>11</day></date><rx>15464831</rx><tx>3677811</tx></day>
+                <day id="5"><date><year>2015</year><month>01</month><day>10</day></date><rx>53159032</rx><tx>2866870</tx></day>
+                <day id="6"><date><year>2015</year><month>01</month><day>09</day></date><rx>21647407</rx><tx>1380558</tx></day>
+                <day id="7"><date><year>2015</year><month>01</month><day>08</day></date><rx>8857005</rx><tx>3197637</tx></day>
+                <day id="8"><date><year>2015</year><month>01</month><day>07</day></date><rx>10166444</rx><tx>2023108</tx></day>
+                <day id="9"><date><year>2015</year><month>01</month><day>06</day></date><rx>22528099</rx><tx>2230285</tx></day>
+                <day id="10"><date><year>2015</year><month>01</month><day>05</day></date><rx>8429231</rx><tx>1526782</tx></day>
+                <day id="11"><date><year>2015</year><month>01</month><day>04</day></date><rx>22500120</rx><tx>3086997</tx></day>
+                <day id="12"><date><year>2015</year><month>01</month><day>03</day></date><rx>15653968</rx><tx>4099809</tx></day>
+                <day id="13"><date><year>2015</year><month>01</month><day>02</day></date><rx>73975504</rx><tx>3304843</tx></day>
+                <day id="14"><date><year>2015</year><month>01</month><day>01</day></date><rx>20030280</rx><tx>5498150</tx></day>
+                <day id="15"><date><year>2014</year><month>12</month><day>31</day></date><rx>16176549</rx><tx>1779845</tx></day>
+                <day id="16"><date><year>2014</year><month>12</month><day>30</day></date><rx>23259265</rx><tx>2235905</tx></day>
+                <day id="17"><date><year>2014</year><month>12</month><day>29</day></date><rx>24526936</rx><tx>2620146</tx></day>
+                <day id="18"><date><year>2014</year><month>12</month><day>28</day></date><rx>79575725</rx><tx>3173981</tx></day>
+                <day id="19"><date><year>2014</year><month>12</month><day>27</day></date><rx>25801096</rx><tx>1707097</tx></day>
+                <day id="20"><date><year>2014</year><month>12</month><day>26</day></date><rx>18056569</rx><tx>921144</tx></day>
+                <day id="21"><date><year>2014</year><month>12</month><day>25</day></date><rx>4737477</rx><tx>930725</tx></day>
+                <day id="22"><date><year>2014</year><month>12</month><day>24</day></date><rx>2106823</rx><tx>568021</tx></day>
+                <day id="23"><date><year>2014</year><month>12</month><day>23</day></date><rx>11502505</rx><tx>972777</tx></day>
+                <day id="24"><date><year>2014</year><month>12</month><day>22</day></date><rx>24434307</rx><tx>1647779</tx></day>
+                <day id="25"><date><year>2014</year><month>12</month><day>21</day></date><rx>5619597</rx><tx>1853425</tx></day>
+                <day id="26"><date><year>2014</year><month>12</month><day>20</day></date><rx>16445618</rx><tx>1596675</tx></day>
+                <day id="27"><date><year>2014</year><month>12</month><day>19</day></date><rx>12068921</rx><tx>1946027</tx></day>
+                <day id="28"><date><year>2014</year><month>12</month><day>18</day></date><rx>10072440</rx><tx>1327896</tx></day>
+                <day id="29"><date><year>2014</year><month>12</month><day>17</day></date><rx>29541634</rx><tx>1908814</tx></day>
+               </days>
+               <months>
+                <month id="0"><date><year>2015</year><month>01</month></date><rx>300396355</rx><tx>40411096</tx></month>
+                <month id="1"><date><year>2014</year><month>12</month></date><rx>988423612</rx><tx>63854422</tx></month>
+                <month id="2"><date><year>2014</year><month>11</month></date><rx>722362506</rx><tx>59351824</tx></month>
+                <month id="3"><date><year>2014</year><month>10</month></date><rx>557736460</rx><tx>67193717</tx></month>
+                <month id="4"><date><year>2014</year><month>09</month></date><rx>542074802</rx><tx>74616209</tx></month>
+                <month id="5"><date><year>2014</year><month>08</month></date><rx>471970533</rx><tx>100063645</tx></month>
+                <month id="6"><date><year>2014</year><month>07</month></date><rx>3708214135</rx><tx>142401988</tx></month>
+                <month id="7"><date><year>2014</year><month>06</month></date><rx>1417761098</rx><tx>132461875</tx></month>
+                <month id="8"><date><year>2014</year><month>05</month></date><rx>962234750</rx><tx>105519915</tx></month>
+                <month id="9"><date><year>2014</year><month>04</month></date><rx>829111993</rx><tx>239267272</tx></month>
+                <month id="10"><date><year>2014</year><month>03</month></date><rx>846856483</rx><tx>181512576</tx></month>
+                <month id="11"><date><year>2014</year><month>02</month></date><rx>765951981</rx><tx>369852894</tx></month>
+               </months>
+               <tops>
+                <top id="0"><date><year>2014</year><month>07</month><day>29</day></date><time><hour>00</hour><minute>00</minute></time><rx>406428223</rx><tx>11627349</tx></top>
+                <top id="1"><date><year>2014</year><month>07</month><day>14</day></date><time><hour>00</hour><minute>00</minute></time><rx>254596437</rx><tx>8738789</tx></top>
+                <top id="2"><date><year>2014</year><month>07</month><day>13</day></date><time><hour>00</hour><minute>00</minute></time><rx>236599199</rx><tx>8627912</tx></top>
+                <top id="3"><date><year>2014</year><month>07</month><day>02</day></date><time><hour>00</hour><minute>00</minute></time><rx>237474154</rx><tx>6898986</tx></top>
+                <top id="4"><date><year>2014</year><month>07</month><day>28</day></date><time><hour>00</hour><minute>00</minute></time><rx>233660835</rx><tx>9053283</tx></top>
+                <top id="5"><date><year>2014</year><month>07</month><day>06</day></date><time><hour>00</hour><minute>00</minute></time><rx>223820176</rx><tx>10443523</tx></top>
+                <top id="6"><date><year>2014</year><month>07</month><day>16</day></date><time><hour>00</hour><minute>00</minute></time><rx>225270600</rx><tx>7260756</tx></top>
+                <top id="7"><date><year>2014</year><month>07</month><day>07</day></date><time><hour>00</hour><minute>00</minute></time><rx>211347181</rx><tx>6998310</tx></top>
+                <top id="8"><date><year>2014</year><month>07</month><day>03</day></date><time><hour>00</hour><minute>00</minute></time><rx>200105719</rx><tx>8743853</tx></top>
+                <top id="9"><date><year>2014</year><month>07</month><day>05</day></date><time><hour>00</hour><minute>00</minute></time><rx>199219505</rx><tx>7317852</tx></top>
+               </tops>
+               <hours>
+                <hour id="0"><date><year>2015</year><month>01</month><day>15</day></date><rx>16208</rx><tx>4452</tx></hour>
+                <hour id="1"><date><year>2015</year><month>01</month><day>15</day></date><rx>9331</rx><tx>1134</tx></hour>
+                <hour id="2"><date><year>2015</year><month>01</month><day>15</day></date><rx>11482</rx><tx>1194</tx></hour>
+                <hour id="3"><date><year>2015</year><month>01</month><day>15</day></date><rx>706028</rx><tx>17110</tx></hour>
+                <hour id="4"><date><year>2015</year><month>01</month><day>15</day></date><rx>11396</rx><tx>1123</tx></hour>
+                <hour id="5"><date><year>2015</year><month>01</month><day>15</day></date><rx>7898</rx><tx>965</tx></hour>
+                <hour id="6"><date><year>2015</year><month>01</month><day>15</day></date><rx>44412</rx><tx>2912</tx></hour>
+                <hour id="7"><date><year>2015</year><month>01</month><day>15</day></date><rx>312484</rx><tx>22558</tx></hour>
+                <hour id="8"><date><year>2015</year><month>01</month><day>15</day></date><rx>10686</rx><tx>2485</tx></hour>
+                <hour id="9"><date><year>2015</year><month>01</month><day>15</day></date><rx>4272</rx><tx>1029</tx></hour>
+                <hour id="10"><date><year>2015</year><month>01</month><day>15</day></date><rx>4325</rx><tx>973</tx></hour>
+                <hour id="11"><date><year>2015</year><month>01</month><day>15</day></date><rx>503013</rx><tx>21580</tx></hour>
+                <hour id="12"><date><year>2015</year><month>01</month><day>15</day></date><rx>1677172</rx><tx>101968</tx></hour>
+                <hour id="13"><date><year>2015</year><month>01</month><day>15</day></date><rx>12877</rx><tx>86681</tx></hour>
+                <hour id="14"><date><year>2015</year><month>01</month><day>15</day></date><rx>15475</rx><tx>1495</tx></hour>
+                <hour id="15"><date><year>2015</year><month>01</month><day>15</day></date><rx>170332</rx><tx>11763</tx></hour>
+                <hour id="16"><date><year>2015</year><month>01</month><day>15</day></date><rx>677609</rx><tx>28309</tx></hour>
+                <hour id="17"><date><year>2015</year><month>01</month><day>15</day></date><rx>170514</rx><tx>9607</tx></hour>
+                <hour id="18"><date><year>2015</year><month>01</month><day>14</day></date><rx>112993</rx><tx>417624</tx></hour>
+                <hour id="19"><date><year>2015</year><month>01</month><day>14</day></date><rx>41132</rx><tx>396668</tx></hour>
+                <hour id="20"><date><year>2015</year><month>01</month><day>14</day></date><rx>1794401</rx><tx>242541</tx></hour>
+                <hour id="21"><date><year>2015</year><month>01</month><day>14</day></date><rx>2994740</rx><tx>362454</tx></hour>
+                <hour id="22"><date><year>2015</year><month>01</month><day>14</day></date><rx>2068608</rx><tx>161200</tx></hour>
+                <hour id="23"><date><year>2015</year><month>01</month><day>14</day></date><rx>833791</rx><tx>20790</tx></hour>
+               </hours>
+              </traffic>
+             </interface>
+            </vnstat> """
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
     def dump2(self):
         z = '''<vnstat version="1.11" xmlversion="1">
             <interface id="em0">

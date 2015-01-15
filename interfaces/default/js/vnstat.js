@@ -51,7 +51,7 @@ function get_currentspeed() {
 function ajaxload() {
     $.ajax({
     	// change url to test
-        url: WEBDIR + 'vnstat/dumpdb',
+        url: WEBDIR + 'vnstat/smdion',
         async: false,
         success: function (data) {
         	t = $('.content')
@@ -95,7 +95,7 @@ function ajaxload() {
 
 function loaddb() {
     $.ajax({
-        url: WEBDIR + 'vnstat/dumpdb',
+        url: WEBDIR + 'vnstat/smdion',
         async: false,
         success: function (data) {
         	var interf = data["vnstat"]["interface"]
