@@ -158,38 +158,53 @@ function makechart2(selector, interfaceid, d) {
 
 	    datasets: [
 	        {
+
 	            label: "Download",
 	            fillColor: "rgba(220,220,220,0.2)",
-	            strokeColor: "rgba(220,220,220,1)",
+	            strokeColor: "#56ff00",//"rgba(220,220,220,1)", // green #56ff00
 	            pointColor: "rgba(220,220,220,1)",
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(220,220,220,1)",
-	            data: d.drx//[65, 59, 80, 81, 56, 55, 40] // d.drx
+	            data: d.drx,
+	            title: "Download", //
+	            scaleLabel: "<%=value%> TB", //
+	            showScale: true //
 	        },
 	        {
+
 	            label: "Upload",
 	            fillColor: "rgba(151,187,205,0.2)",
-	            strokeColor: "rgba(151,187,205,1)",
+	            strokeColor: "#0038ff",//"rgba(151,187,205,1)", // blue #0038ff
 	            pointColor: "rgba(151,187,205,1)",
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(151,187,205,1)",
-	            data: d.dtx//[28, 48, 40, 19, 86, 27, 90]
+	            data: d.dtx,
+	            xPos: d.dtx, // just a test
+	            title: "Upload", //
+	            scaleLabel: "<%=value%> TB", //
+	            showScale: true //
 	        },
 	        {
+	        	title: "Total",
 	            label: "Total",
-	            fillColor: "rgba(151,187,205,0.2)",
+	            fillColor: "rgba(151,187,205,0.2)", // red #FF0000
 	            strokeColor: "#EC7886", //rgba(151,187,205,1)",
 	            pointColor: "rgba(151,187,205,1)",
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(151,187,205,1)",
-	            data: d.dt//[28, 48, 40, 19, 86, 27, 90]
+	            data: d.dt,//[28, 48, 40, 19, 86, 27, 90]
+	            title: "Total", //
+	            scaleLabel: "<%=value%> TB", //
+	            showScale: true //
 	        }
 	    ]
 	};
-	options = {} // can be removed
+	//graphTitle : "default animation",
+	//inGraphDataShow:true
+	options = {showScale: true, scaleLabel: "<%=value%> TB", graphTitle : selector, legend : true, responsive: true} // can be removed
 	new Chart(ctx).Line(data, options);
 }
 
