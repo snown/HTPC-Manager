@@ -83,9 +83,9 @@ class Vnstat(object):
                     if session.recv_ready():
                         #StringIO(session.recv(4096))
                         #out(session.recv(4096))
-                        stdout_data.append(session.recv(4096))
+                        stdout_data.append(session.recv(1024))
                     if session.recv_stderr_ready():
-                        stderr_data.append(session.recv_stderr(4096))
+                        stderr_data.append(session.recv_stderr(1024))
                     if session.exit_status_ready():
                         break
 
