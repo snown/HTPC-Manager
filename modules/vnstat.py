@@ -9,6 +9,10 @@ import xmltodict
 import platform
 import subprocess
 import re
+try:
+    from StringIO import StringIO
+except:
+    pass
 
 try:
     import paramiko
@@ -77,6 +81,8 @@ class Vnstat(object):
                 session.exec_command(cmd)
                 while True:
                     if session.recv_ready():
+                        #StringIO(session.recv(4096))
+                        #out(session.recv(4096))
                         stdout_data.append(session.recv(4096))
                     if session.recv_stderr_ready():
                         stderr_data.append(session.recv_stderr(4096))
@@ -85,15 +91,24 @@ class Vnstat(object):
 
                 session.close()
                 client.close()
+                #out = StringIO(''.join(stdout_data))
+                #out.close()
 
                 if session.recv_exit_status() == 1:
                     self.logger.error("ssh failed")
                     self.logger.error(''.join(stderr_data))
                     #pass # some error 0 is ok 1
 
+                #
+                self.logger.debug("xml stout_data")
+                #print "".join(stdout_data)
+                self.logger.debug(stdout_data)
+                #self.logger.debug("stringIO")
+                #self.logger.debug(out.read())
+                #out.close()
                 # Make json of shitty xml
                 if '--xml' in cmd:
-                    shit = ''.join(stdout_data)
+                    shit = ''.join(stdout_data).replace('\n', '').replace('\0', '')
                     return xmltodict.parse(shit.strip())
                 else:
                     return ''.join(stdout_data)
