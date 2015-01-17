@@ -27,6 +27,7 @@ except ImportError:
 
 class Vnstat(object):
     def __init__(self):
+        self.version_ = None
         self.logger = logging.getLogger("modules.vnstat")
         htpc.MODULES.append({
             "name": "Bandwidth",
@@ -199,8 +200,24 @@ class Vnstat(object):
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
+    def version(self):
+        reg = re.compile(ur'(\d+\.\d+)')
+        search = re.search(reg, self.run('--version'))
+        if search:
+            self.version_ = float(search.group(1))
+            return float(self.version_)
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
     def dumpdb(self):
-        return self.run('--dumpdb --xml')
+        if self.version_ is None:
+            self.version()
+
+        if self.version_ > 1.11:
+            return self.run('--exportdb --xml')
+        else:
+            return self.run('--dumpdb --xml')
 
     @cherrypy.expose()
     @require()
