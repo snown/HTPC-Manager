@@ -76,7 +76,7 @@ class Vnstat(object):
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 client.connect(hostname, username=username, password=password,
-                        allow_agent=False, look_for_keys=False, timeout=timeout)
+                        allow_agent=False, look_for_keys=False, timeout=None)
 
                 stdin, stdout, stderr = client.exec_command(cmd)
                 data = stdout.read()
