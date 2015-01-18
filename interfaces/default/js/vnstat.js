@@ -1,13 +1,13 @@
-
-$(document).ready(function(){
+$(function () {
 	ajaxload()
 	get_currentspeed()
+    setInterval(function () {
+		get_currentspeed()
+    }, 10000);
 
-	//loaddb3()
 });
 
-
-function makeArrayDate2(ary) {
+function makeArray(ary) {
 	d = {}
 	data = []
 	dtx = []
@@ -16,7 +16,7 @@ function makeArrayDate2(ary) {
 
 	$.each(ary, function(i, a) {
 		console.log(a)
-		// all xml results are in kibi convert to gibi
+		// all xml results are in kibi convert to gib
 		var rx = parseInt(a.rx) / 1024 / 1024,
 		tx = parseInt(a.tx) / 1024 / 1024;
 		getReadableFileSizeString(tx)
@@ -68,16 +68,12 @@ function ajaxload() {
             	$.each(interf, function (ii, dd) {
 
                     var p = $('<div>').addClass('row-fluid').attr('id', dd.id);
-                    // below fucks up alignment, fix it
-                    //p.append($('<span>').addClass('pull-left').text(dd.id))
-                    //p.append($('<span>').addClass('pull-right').text(dd.id))
                     // w h needs to hardcoded in canvas
                     m = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'month_' + dd.id));
                     d = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'day_' + dd.id));
                     h = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'hour_' + dd.id));
 
                     // Inside m, d, h make a table or something for tab data
-
 
                     p.append(m);
                     p.append(d);
@@ -86,7 +82,12 @@ function ajaxload() {
 
                 });
 
-			//t.append() some table stuff :P
+			r = $('<div>').addClass("row-fluid").html('<div class="bwinfo"><span class="pull left">Bandwidth stats</span></h4><span class="pull-right bw_updated">x</span></div>')
+			table = $('<table>').addClass("table").append("<tbody id='bandwidth_body'></tbody>")
+			table.append()
+			r.append(table)
+			t.append(r)// some table stuff :P
+
 
         }
 
@@ -106,7 +107,6 @@ function loaddb() {
         		var interf = [data["vnstat"]["interface"]]
         	}
 
-
             $.each(interf, function (n, ainterf) {
                 var z = ainterf;
                 console.log("z");
@@ -120,14 +120,13 @@ function loaddb() {
                 var days = traffic.days.day;
                 var hour = traffic.hours.hour;
 
+                var twelve = makeArray(months);
+                var dday = makeArray(days);
+                var hour2 = makeArray(hour);
 
-                var twelve = makeArrayDate2(months);
-                var dday = makeArrayDate2(days);
-                var hour2 = makeArrayDate2(hour);
-
-                makechart2("month", interfaceid, twelve);
-                makechart2("day", interfaceid, dday);
-                makechart2("hour", interfaceid, hour2);
+                makechart("month", interfaceid, twelve);
+                makechart("day", interfaceid, dday);
+                makechart("hour", interfaceid, hour2);
 
 
             });
@@ -136,7 +135,7 @@ function loaddb() {
     });
 }
 
-function makechart2(selector, interfaceid, d) {
+function makechart(selector, interfaceid, d) {
 	console.log("makechart")
 	console.log(selector);
 	console.log(d)
