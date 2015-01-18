@@ -73,6 +73,14 @@ class Vnstat(object):
 
             # Force windows users to use paramiko as here isnt any native ssh.
             if htpc.settings.get('vnstat_use_ssh') or platform.system() == 'win32':
+                client = paramiko.SSHClient()
+                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                client.connect(hostname, username=username, password=password,
+                        allow_agent=False, look_for_keys=False, timeout=timeout)
+
+                stdin, stdout, stderr = client.exec_command(cmd)
+                data = stdout.read()
+                """
                 client = paramiko.Transport((hostname, port))
                 client.connect(username=username, password=password)
 
@@ -108,11 +116,14 @@ class Vnstat(object):
                 #self.logger.debug(out.read())
                 #out.close()
                 # Make json of shitty xml
+                """
                 if '--xml' in cmd:
-                    shit = ''.join(stdout_data).replace('\n', '').replace('\0', '')
-                    return xmltodict.parse(shit.strip())
+                    #shit = ''.join(stdout_data).replace('\n', '').replace('\0', '')
+                    #return xmltodict.parse(shit.strip())
+                    return xmltodict.parse(data)
                 else:
-                    return ''.join(stdout_data)
+                    #return ''.join(stdout_data)
+                    return data
 
             """
             else:
