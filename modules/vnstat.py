@@ -9,10 +9,6 @@ import xmltodict
 import platform
 import subprocess
 import re
-try:
-    from StringIO import StringIO
-except:
-    pass
 
 try:
     import paramiko
@@ -79,51 +75,15 @@ class Vnstat(object):
                         allow_agent=False, look_for_keys=False, timeout=None)
 
                 stdin, stdout, stderr = client.exec_command(cmd)
-                data = stdout.read()
-                """
-                client = paramiko.Transport((hostname, port))
-                client.connect(username=username, password=password)
+                data_out = stdout.read()
+                #data_in = stdin.read()
+                #data_err = stderr.read()
 
-                stdout_data = []
-                stderr_data = []
-                session = client.open_channel(kind='session')
-                session.exec_command(cmd)
-                while True:
-                    if session.recv_ready():
-                        #StringIO(session.recv(4096))
-                        #out(session.recv(4096))
-                        stdout_data.append(session.recv(1024))
-                    if session.recv_stderr_ready():
-                        stderr_data.append(session.recv_stderr(1024))
-                    if session.exit_status_ready():
-                        break
-
-                session.close()
-                client.close()
-                #out = StringIO(''.join(stdout_data))
-                #out.close()
-
-                if session.recv_exit_status() == 1:
-                    self.logger.error("ssh failed")
-                    self.logger.error(''.join(stderr_data))
-                    #pass # some error 0 is ok 1
-
-                #
-                self.logger.debug("xml stout_data")
-                #print "".join(stdout_data)
-                self.logger.debug(stdout_data)
-                #self.logger.debug("stringIO")
-                #self.logger.debug(out.read())
-                #out.close()
                 # Make json of shitty xml
-                """
                 if '--xml' in cmd:
-                    #shit = ''.join(stdout_data).replace('\n', '').replace('\0', '')
-                    #return xmltodict.parse(shit.strip())
-                    return xmltodict.parse(data)
+                    return xmltodict.parse(data_out)
                 else:
-                    #return ''.join(stdout_data)
-                    return data
+                    return data_out
 
             """
             else:
@@ -661,3 +621,106 @@ class Vnstat(object):
              </interface>
             </vnstat>'''
         return xmltodict.parse(z)
+
+
+    @cherrypy.expose()
+    @require()
+    @cherrypy.tools.json_out()
+    def smdion2(self):
+        s = '''
+                    <vnstat version="1.11" xmlversion="1">
+                     <interface id="em0">
+                      <id>em0</id>
+                      <nick>em0</nick>
+                      <created><date><year>2014</year><month>01</month><day>27</day></date></created>
+                      <updated><date><year>2015</year><month>01</month><day>17</day></date><time><hour>19</hour><minute>23</minute></time></updated>
+                      <traffic>
+                       <total><rx>12443295428</rx><tx>1612790125</tx></total>
+                       <days>
+                        <day id="0"><date><year>2015</year><month>01</month><day>17</day></date><rx>4898487</rx><tx>2315935</tx></day>
+                        <day id="1"><date><year>2015</year><month>01</month><day>16</day></date><rx>23670049</rx><tx>2106033</tx></day>
+                        <day id="2"><date><year>2015</year><month>01</month><day>15</day></date><rx>5895413</rx><tx>1460429</tx></day>
+                        <day id="3"><date><year>2015</year><month>01</month><day>14</day></date><rx>8721689</rx><tx>2023501</tx></day>
+                        <day id="4"><date><year>2015</year><month>01</month><day>13</day></date><rx>8984274</rx><tx>3303172</tx></day>
+                        <day id="5"><date><year>2015</year><month>01</month><day>12</day></date><rx>5912957</rx><tx>1874235</tx></day>
+                        <day id="6"><date><year>2015</year><month>01</month><day>11</day></date><rx>15464831</rx><tx>3677811</tx></day>
+                        <day id="7"><date><year>2015</year><month>01</month><day>10</day></date><rx>53159032</rx><tx>2866870</tx></day>
+                        <day id="8"><date><year>2015</year><month>01</month><day>09</day></date><rx>21647407</rx><tx>1380558</tx></day>
+                        <day id="9"><date><year>2015</year><month>01</month><day>08</day></date><rx>8857005</rx><tx>3197637</tx></day>
+                        <day id="10"><date><year>2015</year><month>01</month><day>07</day></date><rx>10166444</rx><tx>2023108</tx></day>
+                        <day id="11"><date><year>2015</year><month>01</month><day>06</day></date><rx>22528099</rx><tx>2230285</tx></day>
+                        <day id="12"><date><year>2015</year><month>01</month><day>05</day></date><rx>8429231</rx><tx>1526782</tx></day>
+                        <day id="13"><date><year>2015</year><month>01</month><day>04</day></date><rx>22500120</rx><tx>3086997</tx></day>
+                        <day id="14"><date><year>2015</year><month>01</month><day>03</day></date><rx>15653968</rx><tx>4099809</tx></day>
+                        <day id="15"><date><year>2015</year><month>01</month><day>02</day></date><rx>73975504</rx><tx>3304843</tx></day>
+                        <day id="16"><date><year>2015</year><month>01</month><day>01</day></date><rx>20030280</rx><tx>5498150</tx></day>
+                        <day id="17"><date><year>2014</year><month>12</month><day>31</day></date><rx>16176549</rx><tx>1779845</tx></day>
+                        <day id="18"><date><year>2014</year><month>12</month><day>30</day></date><rx>23259265</rx><tx>2235905</tx></day>
+                        <day id="19"><date><year>2014</year><month>12</month><day>29</day></date><rx>24526936</rx><tx>2620146</tx></day>
+                        <day id="20"><date><year>2014</year><month>12</month><day>28</day></date><rx>79575725</rx><tx>3173981</tx></day>
+                        <day id="21"><date><year>2014</year><month>12</month><day>27</day></date><rx>25801096</rx><tx>1707097</tx></day>
+                        <day id="22"><date><year>2014</year><month>12</month><day>26</day></date><rx>18056569</rx><tx>921144</tx></day>
+                        <day id="23"><date><year>2014</year><month>12</month><day>25</day></date><rx>4737477</rx><tx>930725</tx></day>
+                        <day id="24"><date><year>2014</year><month>12</month><day>24</day></date><rx>2106823</rx><tx>568021</tx></day>
+                        <day id="25"><date><year>2014</year><month>12</month><day>23</day></date><rx>11502505</rx><tx>972777</tx></day>
+                        <day id="26"><date><year>2014</year><month>12</month><day>22</day></date><rx>24434307</rx><tx>1647779</tx></day>
+                        <day id="27"><date><year>2014</year><month>12</month><day>21</day></date><rx>5619597</rx><tx>1853425</tx></day>
+                        <day id="28"><date><year>2014</year><month>12</month><day>20</day></date><rx>16445618</rx><tx>1596675</tx></day>
+                        <day id="29"><date><year>2014</year><month>12</month><day>19</day></date><rx>12068921</rx><tx>1946027</tx></day>
+                       </days>
+                       <months>
+                        <month id="0"><date><year>2015</year><month>01</month></date><rx>330494790</rx><tx>45976155</tx></month>
+                        <month id="1"><date><year>2014</year><month>12</month></date><rx>988423612</rx><tx>63854422</tx></month>
+                        <month id="2"><date><year>2014</year><month>11</month></date><rx>722362506</rx><tx>59351824</tx></month>
+                        <month id="3"><date><year>2014</year><month>10</month></date><rx>557736460</rx><tx>67193717</tx></month>
+                        <month id="4"><date><year>2014</year><month>09</month></date><rx>542074802</rx><tx>74616209</tx></month>
+                        <month id="5"><date><year>2014</year><month>08</month></date><rx>471970533</rx><tx>100063645</tx></month>
+                        <month id="6"><date><year>2014</year><month>07</month></date><rx>3708214135</rx><tx>142401988</tx></month>
+                        <month id="7"><date><year>2014</year><month>06</month></date><rx>1417761098</rx><tx>132461875</tx></month>
+                        <month id="8"><date><year>2014</year><month>05</month></date><rx>962234750</rx><tx>105519915</tx></month>
+                        <month id="9"><date><year>2014</year><month>04</month></date><rx>829111993</rx><tx>239267272</tx></month>
+                        <month id="10"><date><year>2014</year><month>03</month></date><rx>846856483</rx><tx>181512576</tx></month>
+                        <month id="11"><date><year>2014</year><month>02</month></date><rx>765951981</rx><tx>369852894</tx></month>
+                       </months>
+                       <tops>
+                        <top id="0"><date><year>2014</year><month>07</month><day>29</day></date><time><hour>00</hour><minute>00</minute></time><rx>406428223</rx><tx>11627349</tx></top>
+                        <top id="1"><date><year>2014</year><month>07</month><day>14</day></date><time><hour>00</hour><minute>00</minute></time><rx>254596437</rx><tx>8738789</tx></top>
+                        <top id="2"><date><year>2014</year><month>07</month><day>13</day></date><time><hour>00</hour><minute>00</minute></time><rx>236599199</rx><tx>8627912</tx></top>
+                        <top id="3"><date><year>2014</year><month>07</month><day>02</day></date><time><hour>00</hour><minute>00</minute></time><rx>237474154</rx><tx>6898986</tx></top>
+                        <top id="4"><date><year>2014</year><month>07</month><day>28</day></date><time><hour>00</hour><minute>00</minute></time><rx>233660835</rx><tx>9053283</tx></top>
+                        <top id="5"><date><year>2014</year><month>07</month><day>06</day></date><time><hour>00</hour><minute>00</minute></time><rx>223820176</rx><tx>10443523</tx></top>
+                        <top id="6"><date><year>2014</year><month>07</month><day>16</day></date><time><hour>00</hour><minute>00</minute></time><rx>225270600</rx><tx>7260756</tx></top>
+                        <top id="7"><date><year>2014</year><month>07</month><day>07</day></date><time><hour>00</hour><minute>00</minute></time><rx>211347181</rx><tx>6998310</tx></top>
+                        <top id="8"><date><year>2014</year><month>07</month><day>03</day></date><time><hour>00</hour><minute>00</minute></time><rx>200105719</rx><tx>8743853</tx></top>
+                        <top id="9"><date><year>2014</year><month>07</month><day>05</day></date><time><hour>00</hour><minute>00</minute></time><rx>199219505</rx><tx>7317852</tx></top>
+                       </tops>
+                       <hours>
+                        <hour id="0"><date><year>2015</year><month>01</month><day>17</day></date><rx>57705</rx><tx>298521</tx></hour>
+                        <hour id="1"><date><year>2015</year><month>01</month><day>17</day></date><rx>5786</rx><tx>987</tx></hour>
+                        <hour id="2"><date><year>2015</year><month>01</month><day>17</day></date><rx>8599</rx><tx>1095</tx></hour>
+                        <hour id="3"><date><year>2015</year><month>01</month><day>17</day></date><rx>4301</rx><tx>754</tx></hour>
+                        <hour id="4"><date><year>2015</year><month>01</month><day>17</day></date><rx>4252</rx><tx>786</tx></hour>
+                        <hour id="5"><date><year>2015</year><month>01</month><day>17</day></date><rx>4639</rx><tx>841</tx></hour>
+                        <hour id="6"><date><year>2015</year><month>01</month><day>17</day></date><rx>4810</rx><tx>830</tx></hour>
+                        <hour id="7"><date><year>2015</year><month>01</month><day>17</day></date><rx>5246</rx><tx>904</tx></hour>
+                        <hour id="8"><date><year>2015</year><month>01</month><day>17</day></date><rx>61153</rx><tx>5273</tx></hour>
+                        <hour id="9"><date><year>2015</year><month>01</month><day>17</day></date><rx>460876</rx><tx>62629</tx></hour>
+                        <hour id="10"><date><year>2015</year><month>01</month><day>17</day></date><rx>2279795</rx><tx>147454</tx></hour>
+                        <hour id="11"><date><year>2015</year><month>01</month><day>17</day></date><rx>266903</rx><tx>369922</tx></hour>
+                        <hour id="12"><date><year>2015</year><month>01</month><day>17</day></date><rx>598690</rx><tx>394488</tx></hour>
+                        <hour id="13"><date><year>2015</year><month>01</month><day>17</day></date><rx>172740</rx><tx>313713</tx></hour>
+                        <hour id="14"><date><year>2015</year><month>01</month><day>17</day></date><rx>256432</rx><tx>159080</tx></hour>
+                        <hour id="15"><date><year>2015</year><month>01</month><day>17</day></date><rx>98656</rx><tx>139677</tx></hour>
+                        <hour id="16"><date><year>2015</year><month>01</month><day>17</day></date><rx>218175</rx><tx>192665</tx></hour>
+                        <hour id="17"><date><year>2015</year><month>01</month><day>17</day></date><rx>189208</rx><tx>19539</tx></hour>
+                        <hour id="18"><date><year>2015</year><month>01</month><day>17</day></date><rx>99101</rx><tx>131510</tx></hour>
+                        <hour id="19"><date><year>2015</year><month>01</month><day>17</day></date><rx>101420</rx><tx>75267</tx></hour>
+                        <hour id="20"><date><year>2015</year><month>01</month><day>16</day></date><rx>132920</rx><tx>332629</tx></hour>
+                        <hour id="21"><date><year>2015</year><month>01</month><day>16</day></date><rx>214093</rx><tx>85947</tx></hour>
+                        <hour id="22"><date><year>2015</year><month>01</month><day>16</day></date><rx>1331894</rx><tx>246554</tx></hour>
+                        <hour id="23"><date><year>2015</year><month>01</month><day>16</day></date><rx>101343</rx><tx>335825</tx></hour>
+                       </hours>
+                      </traffic>
+                     </interface>
+                    </vnstat>'''
+        return xmltodict.parse(s)

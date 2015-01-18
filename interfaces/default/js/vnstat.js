@@ -15,6 +15,7 @@ function makeArrayDate2(ary) {
 	dt = []
 
 	$.each(ary, function(i, a) {
+		console.log(a)
 		// all xml results are in kibi convert to gibi
 		var rx = parseInt(a.rx) / 1024 / 1024,
 		tx = parseInt(a.tx) / 1024 / 1024;
@@ -52,7 +53,7 @@ function get_currentspeed() {
 function ajaxload() {
     $.ajax({
     	// change url to test
-        url: WEBDIR + 'vnstat/dumpdb',
+        url: WEBDIR + 'vnstat/smdion2',
         async: false,
         success: function (data) {
         	t = $('.content')
@@ -96,7 +97,7 @@ function ajaxload() {
 
 function loaddb() {
     $.ajax({
-        url: WEBDIR + 'vnstat/dumpdb',
+        url: WEBDIR + 'vnstat/smdion2',
         async: false,
         success: function (data) {
         	var interf = data["vnstat"]["interface"]
@@ -168,7 +169,7 @@ function makechart2(selector, interfaceid, d) {
 	            pointHighlightStroke: "rgba(220,220,220,1)",
 	            data: d.drx,
 	            title: "Download", //
-	            scaleLabel: "<%=value%> TB", //
+	            scaleLabel: "<%=value%> GIBI", //
 	            showScale: true //
 	        },
 	        {
@@ -183,7 +184,7 @@ function makechart2(selector, interfaceid, d) {
 	            data: d.dtx,
 	            xPos: d.dtx, // just a test
 	            title: "Upload", //
-	            scaleLabel: "<%=value%> TB", //
+	            scaleLabel: "<%=value%> GIBI", //
 	            showScale: true //
 	        },
 	        {
@@ -197,14 +198,14 @@ function makechart2(selector, interfaceid, d) {
 	            pointHighlightStroke: "rgba(151,187,205,1)",
 	            data: d.dt,//[28, 48, 40, 19, 86, 27, 90]
 	            title: "Total", //
-	            scaleLabel: "<%=value%> TB", //
+	            scaleLabel: "<%=value%> GIBI", //
 	            showScale: true //
 	        }
 	    ]
 	};
 	//graphTitle : "default animation",
 	//inGraphDataShow:true
-	options = {showScale: true, scaleLabel: "<%=value%> TB", graphTitle : selector, legend : true, responsive: true} // can be removed
+	options = {showScale: true, scaleLabel: "<%=value%> GIBI", graphTitle : selector, legend : true, responsive: true} // can be removed
 	new Chart(ctx).Line(data, options);
 }
 
