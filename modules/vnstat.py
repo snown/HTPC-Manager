@@ -72,7 +72,7 @@ class Vnstat(object):
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 client.connect(hostname, username=username, password=password,
-                        allow_agent=False, look_for_keys=False, timeout=None)
+                                allow_agent=False, look_for_keys=False, timeout=10)
 
                 stdin, stdout, stderr = client.exec_command(cmd)
                 data_out = stdout.read()
@@ -85,19 +85,11 @@ class Vnstat(object):
                 else:
                     return data_out
 
-            """
             else:
                 # vnstat is running on the same computer as htpc manager
                 self.logger.debug('Pipeing %s from shell' % cmd)
-                s = ""
-                if hostname and port:
-                    s = "%s %s" % (hostname, port)
-                if username and password:
-                    s += "%s@%s" % (username, password)
 
-                fullcmd = "ssh %s %s" (s, cmd)
-                print fullcmd
-                proc = subprocess.Popen(fullcmd, stdout=subprocess.PIPE,
+                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                         stderr=subprocess.STDOUT, shell=True, cwd=htpc.RUNDIR)
                 output, err = proc.communicate()
                 returncode = proc.returncode
@@ -107,7 +99,6 @@ class Vnstat(object):
                         return xmltodict.parse(output.strip())
                     else:
                         return output.strip()
-            """
 
     # Add a dropdown where users can choose parameter in dropdown?
     @cherrypy.expose()

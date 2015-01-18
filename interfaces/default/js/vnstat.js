@@ -52,8 +52,7 @@ function get_currentspeed() {
 // loads from db and makes html
 function ajaxload() {
     $.ajax({
-    	// change url to test
-        url: WEBDIR + 'vnstat/smdion2',
+        url: WEBDIR + 'vnstat/dumpdb',
         async: false,
         success: function (data) {
         	t = $('.content')
@@ -87,6 +86,8 @@ function ajaxload() {
 
                 });
 
+			//t.append() some table stuff :P
+
         }
 
     });
@@ -97,7 +98,7 @@ function ajaxload() {
 
 function loaddb() {
     $.ajax({
-        url: WEBDIR + 'vnstat/smdion2',
+        url: WEBDIR + 'vnstat/dumpdb',
         async: false,
         success: function (data) {
         	var interf = data["vnstat"]["interface"]
@@ -162,50 +163,54 @@ function makechart2(selector, interfaceid, d) {
 
 	            label: "Download",
 	            fillColor: "rgba(220,220,220,0.2)",
-	            strokeColor: "#56ff00",//"rgba(220,220,220,1)", // green #56ff00
-	            pointColor: "rgba(220,220,220,1)",
+	            strokeColor: "#56ff00",//"rgba(220,220,220,1)",
+	            pointColor: "#56ff00",//"rgba(220,220,220,1)",
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(220,220,220,1)",
 	            data: d.drx,
-	            title: "Download", //
-	            scaleLabel: "<%=value%> GIBI", //
-	            showScale: true //
+	            title: "Download",
 	        },
 	        {
 
 	            label: "Upload",
 	            fillColor: "rgba(151,187,205,0.2)",
-	            strokeColor: "#0038ff",//"rgba(151,187,205,1)", // blue #0038ff
-	            pointColor: "rgba(151,187,205,1)",
+	            strokeColor: "#0038ff",//"rgba(151,187,205,1)",
+	            pointColor: "#0038ff",//"rgba(151,187,205,1)",
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(151,187,205,1)",
 	            data: d.dtx,
-	            xPos: d.dtx, // just a test
-	            title: "Upload", //
-	            scaleLabel: "<%=value%> GIBI", //
-	            showScale: true //
+	            title: "Upload",
 	        },
 	        {
-	        	title: "Total",
 	            label: "Total",
 	            fillColor: "rgba(151,187,205,0.2)", // red #FF0000
 	            strokeColor: "#EC7886", //rgba(151,187,205,1)",
-	            pointColor: "rgba(151,187,205,1)",
+	            pointColor: "#EC7886",//"rgba(151,187,205,1)",
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(151,187,205,1)",
-	            data: d.dt,//[28, 48, 40, 19, 86, 27, 90]
-	            title: "Total", //
-	            scaleLabel: "<%=value%> GIBI", //
-	            showScale: true //
+	            data: d.dt,
+	            title: "Total",
 	        }
 	    ]
 	};
-	//graphTitle : "default animation",
+	// Would have been nice but to many datapoints
 	//inGraphDataShow:true
-	options = {showScale: true, scaleLabel: "<%=value%> GIBI", graphTitle : selector, legend : true, responsive: true} // can be removed
+	// annotateDisplay can cause problems, remove in that case.
+	options = {showScale: true,
+			inGraphDataShow: false,
+	 		//scaleLabel: "<%=value%> GIB",
+	 		graphTitle : selector,
+	 		legend : true,
+	 		responsive: true,
+	 		annotateDisplay: true,
+	 		yAxisUnit: "GIB",
+	 		yAxisUnitFontSize: 11,
+	 		//inGraphDataTmpl: "<%=v2.toFixed(2)%>",
+	 		annotateLabel: "<%=(v1 == '' ? '' : v1) + (v1!='' && v2 !='' ? ' -  ' : '')+(v2 == '' ? '' : v2)+(v1!='' || v2 !='' ? ': ' : ' ') + v3.toFixed(2)%>",
+		}
 	new Chart(ctx).Line(data, options);
 }
 
