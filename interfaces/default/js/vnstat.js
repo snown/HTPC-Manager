@@ -1,3 +1,8 @@
+// I feel like the entire thing is just one major fucking hack...
+
+var usage_total = {"tx": 0, "rx": 0, "total": 0}
+var usage_last_month = {"tx": 0, "rx": 0, "total": 0}
+var usage_current_month = {"tx": 0, "rx": 0, "total": 0}
 $(function () {
 	ajaxload()
 	get_currentspeed()
@@ -7,35 +12,105 @@ $(function () {
 
 });
 
+
+function make_total(d) {
+ 	usage_total.rx += parseInt(d.rx);
+ 	usage_total.tx += parseInt(d.tx);
+ 	usage_total.total += parseInt(d.rx + d.tx)
+
+}
+
+function make_last_month(d) {
+ 	usage_last_month.rx += parseInt(d.rx);
+ 	usage_last_month.tx += parseInt(d.tx);
+ 	usage_last_month.total += parseInt(d.tx + d.rx);
+}
+
+function make_current_month(d) {
+ 	usage_current_month.rx += parseInt(d.rx);
+ 	usage_current_month.tx += parseInt(d.tx);
+ 	usage_current_month.total += parseInt(d.tx + d.rx);
+
+}
+
+function find_last_30_days() {
+    var today = new Date();
+    var year = today.getFullYear();
+    var month = today.getMonth();
+    var date = today.getDate();
+    var daylist = [];
+    for (var i = 0; i < 30; i++) {
+        var day = new Date(year, month - 1, date + i);
+        daylist.push(day.toLocaleDateString());
+    }
+    return daylist
+}
+
+function find_last_12_months() {
+    var today = new Date();
+
+    var aMonth = today.getMonth();
+    var months = [],
+        i;
+    var month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    for (i = 0; i < 12; i++) {
+        months.push(month[aMonth]);
+        aMonth--;
+        if (aMonth < 0) {
+            aMonth = 11;
+        }
+    }
+
+    return months.reverse();
+}
+
+function find_last_24_hours() {
+    var today = new Date();
+
+    var current_hour = today.getHours();
+    var hours = [],
+        i;
+    var hour = ["00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
+    for (i = 0; i < 24; i++) {
+        hours.push(hour[current_hour]);
+        current_hour--;
+        if (current_hour < 0) {
+            current_hour = 23;
+        }
+    }
+
+    return hours.reverse();
+}
+
 function makeArray(ary) {
-	d = {}
-	data = []
-	dtx = []
-	drx = []
-	dt = []
+	console.log("make array")
+	var d = {}
+	var data = []
+	var dtx = []
+	var drx = []
+	var dt = []
 
 	$.each(ary, function(i, a) {
-		console.log(a)
-		// all xml results are in kibi convert to gib
-		var rx = parseInt(a.rx) / 1024 / 1024,
-		tx = parseInt(a.tx) / 1024 / 1024;
-		getReadableFileSizeString(tx)
-		dtx.push(tx)
-		drx.push(rx)
-		dt.push((rx + tx))
-
+		if (i == a["@id"]) {
+			// all xml results are in kibi convert to gib
+			var rx = parseInt(a.rx) / 1024 / 1024
+			var tx = parseInt(a.tx) / 1024 / 1024;
+			dtx.push(tx)
+			drx.push(rx)
+			dt.push((rx + tx))
+		}
 
 	})
+
 	d.dtx = dtx
 	d.drx = drx
 	d.dt = dt
 
-	console.log("d")
-	console.log(d)
 	return d
 
 }
 
+// Grabs current speed
 function get_currentspeed() {
 	$.get(WEBDIR + 'vnstat/tr', function(data) {
 		if (data.rx && data.tx) {
@@ -55,7 +130,7 @@ function ajaxload() {
         url: WEBDIR + 'vnstat/dumpdb',
         async: false,
         success: function (data) {
-        	t = $('.content')
+        	var t = $('.content')
         	console.log("ajaxload")
         	console.log("data.vnstat.interface")
         	console.log(data.vnstat.interface)
@@ -64,16 +139,56 @@ function ajaxload() {
         	if (typeof(interf.id) !== 'undefined'){
         		var interf = [data["vnstat"]["interface"]]
         	}
+        	/*
+        	var date = new Date()
+        	// Find current month
+        	var current_month = date.getMonth();
+        	// find last month
+        	var last_month = (current_month-1)
+        	//var last_month = date.getMonth() + 1
+        	*/
 
+        		var usage_all_interfaces;
             	$.each(interf, function (ii, dd) {
+            		// grab stuff for fucking table
+            		console.log("fucking dd")
+            		console.log(dd)
+
+            		var date = new Date()
+            		// Find current month
+            		var current_month = (date.getMonth() + 1);
+            		// find last month
+            		var last_month_ = date.setMonth(date.getMonth()-1)
+            		var last_month = date.getMonth() + 1
+            		console.log("last_month")
+            		// wrap shitty month in array else it will fail
+            		var shitty_months = dd.traffic.months.month
+            		if (typeof(dd.traffic.months.month["@id"]) !== 'undefined'){
+        				var shitty_months = [dd.traffic.months.month]
+        			}
+
+            		make_total(dd.traffic.total);
+            		$.each(shitty_months, function(iii, ddd) {
+            			//console.log("loop months")
+            			//console.log(ddd)
+            			if (ddd.date.month == current_month) {
+            				console.log("current_month")
+            				console.log(ddd)
+            				make_current_month(ddd)
+            			} else if (ddd.date.month == last_month) {
+            				console.log("last_month")
+            				console.log(ddd)
+            				make_last_month(ddd);
+            			}
+
+            		})
+
 
                     var p = $('<div>').addClass('row-fluid').attr('id', dd.id);
                     // w h needs to hardcoded in canvas
-                    m = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'month_' + dd.id));
-                    d = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'day_' + dd.id));
-                    h = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'hour_' + dd.id));
-
-                    // Inside m, d, h make a table or something for tab data
+                    var m = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'month_' + dd.id));
+                    var d = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'day_' + dd.id));
+                    var h = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'hour_' + dd.id));
 
                     p.append(m);
                     p.append(d);
@@ -82,10 +197,13 @@ function ajaxload() {
 
                 });
 
-			r = $('<div>').addClass("row-fluid").html('<div class="bwinfo"><span class="pull left">Bandwidth stats</span></h4><span class="pull-right bw_updated">x</span></div>')
-			table = $('<table>').addClass("table").append("<tbody id='bandwidth_body'></tbody>")
-			table.append()
-			r.append(table)
+
+
+			// make the fucking table
+			r = $('<div>').addClass("row-fluid bwinfocontainer").html('<div class="bwinfo"><span class="pull left">Bandwidth stats</span></h4><span class="pull-right bw_updated">x</span></div>')
+			r.append('<table class="table table-striped table-hover"> <thead> <tr> <th>Periode</th> <th class="">Download</th> <th class="">Upload</th> <th class="">Total</th> </tr></thead> <tbody id="bw_table_body"></tbody></table>')
+			//table.append()
+			//r.append(table)
 			t.append(r)// some table stuff :P
 
 
@@ -93,7 +211,18 @@ function ajaxload() {
 
     });
 
+			var tr_this_month = $('<tr>').html('<td>This month</td><td>' + getReadableFileSizeString(usage_current_month.rx) + '</td><td>' + getReadableFileSizeString(usage_current_month.tx) + '</td><td>' + getReadableFileSizeString(usage_current_month.rx + usage_current_month.tx) + '</td>')
+			var tr_last_month = $('<tr>').html('<td>Last month</td><td>' + getReadableFileSizeString(usage_last_month.rx) + '</td><td>' + getReadableFileSizeString(usage_last_month.tx) + '</td><td>' + getReadableFileSizeString(usage_last_month.rx + usage_last_month.tx) + '</td>')
+			var tr_total = $('<tr>').html('<td>Total</td><td>' + getReadableFileSizeString(usage_total.rx) + '</td><td>' + getReadableFileSizeString(usage_total.tx) + '</td><td>' + getReadableFileSizeString(usage_total.rx + usage_total.tx) + '</td>')
+			console.log("log info")
+			console.log(usage_total)
+			console.log(usage_last_month)
+			console.log(usage_current_month)
+			$('#bw_table_body').append(tr_this_month, tr_last_month, tr_total)
+
     loaddb()
+    console.log("usage_total")
+    console.log(usage_total)
 }
 
 
@@ -139,17 +268,18 @@ function makechart(selector, interfaceid, d) {
 	console.log("makechart")
 	console.log(selector);
 	console.log(d)
+	var l;
 	if (selector == "day") {
-		l = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+		l = find_last_30_days()
 
 	} else if (selector == "month") {
-		l = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ]
+		l = find_last_12_months();
 
 	} else if (selector == "hour") {
-		l = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+		l = find_last_24_hours();
 	}
 
-	sel = selector + '_' + interfaceid
+	var sel = selector + '_' + interfaceid
 	var ctx = $('#' + sel).get(0).getContext("2d");
 	parentwidth = $('#' + sel).parent().width()
 	parentheight = $('#' + sel).parent().height()
@@ -167,8 +297,10 @@ function makechart(selector, interfaceid, d) {
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(220,220,220,1)",
-	            data: d.drx,
+	            // reverse the data so its the same way as a the chart
+	            data: d.drx.reverse(),
 	            title: "Download",
+	            //graphSubTitle: selector
 	        },
 	        {
 
@@ -179,8 +311,9 @@ function makechart(selector, interfaceid, d) {
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(151,187,205,1)",
-	            data: d.dtx,
+	            data: d.dtx.reverse(),
 	            title: "Upload",
+	            //graphSubTitle: selector
 	        },
 	        {
 	            label: "Total",
@@ -190,8 +323,9 @@ function makechart(selector, interfaceid, d) {
 	            pointStrokeColor: "#fff",
 	            pointHighlightFill: "#fff",
 	            pointHighlightStroke: "rgba(151,187,205,1)",
-	            data: d.dt,
+	            data: d.dt.reverse(),
 	            title: "Total",
+	            //graphSubTitle: selector
 	        }
 	    ]
 	};
@@ -215,11 +349,11 @@ function makechart(selector, interfaceid, d) {
 
 // grab form default.js instead? use math.pow
 function getReadableFileSizeString(fileSizeInBytes) {
-    var i = -1;
-    var byteUnits = [' kB', ' MB', ' GB', ' TB', 'PB'];
+    var i = 0;
+    var byteUnits = [' KB',' MB', ' GB', ' TB', ' PB'];
     do {
         fileSizeInBytes = fileSizeInBytes / 1024;
         i++;
     } while (fileSizeInBytes > 1024);
-    return fileSizeInBytes.toFixed(1) + byteUnits[i];
+    return fileSizeInBytes.toFixed(2) + byteUnits[i];
 };

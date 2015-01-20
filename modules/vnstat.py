@@ -385,7 +385,6 @@ class Vnstat(object):
         #return self.run('vnstat --dumpdb --xml')
 
     @cherrypy.expose()
-    @require()
     @cherrypy.tools.json_out()
     def dump3(self):
         z = '''<vnstat version="1.11" xmlversion="1">
@@ -611,8 +610,8 @@ class Vnstat(object):
               </traffic>
              </interface>
             </vnstat>'''
-        return xmltodict.parse(z)
 
+        return xmltodict.parse(z)
 
     @cherrypy.expose()
     @require()
