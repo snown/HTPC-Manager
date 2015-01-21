@@ -1,35 +1,47 @@
 // I feel like the entire thing is just one major fucking hack...
 
-var usage_total = {"tx": 0, "rx": 0, "total": 0}
-var usage_last_month = {"tx": 0, "rx": 0, "total": 0}
-var usage_current_month = {"tx": 0, "rx": 0, "total": 0}
-$(function () {
-	ajaxload()
-	get_currentspeed()
-    setInterval(function () {
-		get_currentspeed()
+var usage_total = {
+    "tx": 0,
+    "rx": 0,
+    "total": 0
+}
+var usage_last_month = {
+    "tx": 0,
+    "rx": 0,
+    "total": 0
+}
+var usage_current_month = {
+    "tx": 0,
+    "rx": 0,
+    "total": 0
+}
+$(function() {
+    ajaxload()
+    get_currentspeed()
+    setInterval(function() {
+        get_currentspeed()
     }, 10000);
 
 });
 
 
 function make_total(d) {
- 	usage_total.rx += parseInt(d.rx);
- 	usage_total.tx += parseInt(d.tx);
- 	usage_total.total += parseInt(d.rx + d.tx)
+    usage_total.rx += parseInt(d.rx, 10);
+    usage_total.tx += parseInt(d.tx, 10);
+    usage_total.total += parseInt(d.rx + d.tx, 10);
 
 }
 
 function make_last_month(d) {
- 	usage_last_month.rx += parseInt(d.rx);
- 	usage_last_month.tx += parseInt(d.tx);
- 	usage_last_month.total += parseInt(d.tx + d.rx);
+    usage_last_month.rx += parseInt(d.rx, 10);
+    usage_last_month.tx += parseInt(d.tx, 10);
+    usage_last_month.total += parseInt(d.tx + d.rx, 10);
 }
 
 function make_current_month(d) {
- 	usage_current_month.rx += parseInt(d.rx);
- 	usage_current_month.tx += parseInt(d.tx);
- 	usage_current_month.total += parseInt(d.tx + d.rx);
+    usage_current_month.rx += parseInt(d.rx, 10);
+    usage_current_month.tx += parseInt(d.tx, 10);
+    usage_current_month.total += parseInt(d.tx + d.rx, 10);
 
 }
 
@@ -43,7 +55,7 @@ function find_last_30_days() {
         var day = new Date(year, month - 1, date + i);
         daylist.push(day.toLocaleDateString());
     }
-    return daylist
+    return daylist;
 }
 
 function find_last_12_months() {
@@ -83,146 +95,115 @@ function find_last_24_hours() {
 }
 
 function makeArray(ary) {
-	console.log("make array")
-	var d = {}
-	var data = []
-	var dtx = []
-	var drx = []
-	var dt = []
+    var d = {};
+    var data = [];
+    var dtx = [];
+    var drx = [];
+    var dt = [];
 
-	$.each(ary, function(i, a) {
-		if (i == a["@id"]) {
-			// all xml results are in kibi convert to gib
-			var rx = parseInt(a.rx) / 1024 / 1024
-			var tx = parseInt(a.tx) / 1024 / 1024;
-			dtx.push(tx)
-			drx.push(rx)
-			dt.push((rx + tx))
-		}
+    $.each(ary, function(i, a) {
+        //the xml is sorted in 0 based index where 0 is current day/month etc
+        if (i == a["@id"]) {
+            // all xml results are in kibi convert to gib
+            var rx = parseInt(a.rx, 10) / 1024 / 1024;
+            var tx = parseInt(a.tx, 10) / 1024 / 1024;
+            dtx.push(tx);
+            drx.push(rx);
+            dt.push((rx + tx));
+        }
 
-	})
+    });
 
-	d.dtx = dtx
-	d.drx = drx
-	d.dt = dt
+    d.dtx = dtx;
+    d.drx = drx;
+    d.dt = dt;
 
-	return d
+    return d;
 
 }
 
 // Grabs current speed
 function get_currentspeed() {
-	$.get(WEBDIR + 'vnstat/tr', function(data) {
-		if (data.rx && data.tx) {
-			$("#vnstat-rx").text(data.rx);
-			$("#vnstat-tx").text(data.tx);
+    $.get(WEBDIR + 'vnstat/tr', function(data) {
+        if (data.rx && data.tx) {
+            $("#vnstat-rx").text(data.rx);
+            $("#vnstat-tx").text(data.tx);
 
-		} else {
-			return
-		}
+        } else {
+            return;
+        }
 
-	})
+    });
 }
 
 // loads from db and makes html
+// canvas has to exist for chart to be drawn, thats why its 2 calls..
 function ajaxload() {
     $.ajax({
         url: WEBDIR + 'vnstat/dumpdb',
         async: false,
-        success: function (data) {
-        	var t = $('.content')
-        	console.log("ajaxload")
-        	console.log("data.vnstat.interface")
-        	console.log(data.vnstat.interface)
-        	var interf = data["vnstat"]["interface"]
-        	// check if its a dict or list
-        	if (typeof(interf.id) !== 'undefined'){
-        		var interf = [data["vnstat"]["interface"]]
-        	}
-        	/*
-        	var date = new Date()
-        	// Find current month
-        	var current_month = date.getMonth();
-        	// find last month
-        	var last_month = (current_month-1)
-        	//var last_month = date.getMonth() + 1
-        	*/
+        success: function(data) {
+            var t = $('.content');
+            var interf = data["vnstat"]["interface"];
+                // check if its a dict or list
+            if (typeof(interf.id) !== 'undefined') {
+                interf = [data["vnstat"]["interface"]];
+            }
 
-        		var usage_all_interfaces;
-            	$.each(interf, function (ii, dd) {
-            		// grab stuff for fucking table
-            		console.log("fucking dd")
-            		console.log(dd)
+            var usage_all_interfaces;
+            $.each(interf, function(ii, dd) {
+                var date = new Date();
+                    // Find current month
+                var current_month = (date.getMonth() + 1);
+                // find last month
+                var last_month_ = date.setMonth(date.getMonth() - 1);
+                var last_month = date.getMonth() + 1;
+                    // wrap shitty month in array else it will fail
+                var shitty_months = dd.traffic.months.month;
+                if (typeof(dd.traffic.months.month["@id"]) !== 'undefined') {
+                    shitty_months = [dd.traffic.months.month];
+                }
 
-            		var date = new Date()
-            		// Find current month
-            		var current_month = (date.getMonth() + 1);
-            		// find last month
-            		var last_month_ = date.setMonth(date.getMonth()-1)
-            		var last_month = date.getMonth() + 1
-            		console.log("last_month")
-            		// wrap shitty month in array else it will fail
-            		var shitty_months = dd.traffic.months.month
-            		if (typeof(dd.traffic.months.month["@id"]) !== 'undefined'){
-        				var shitty_months = [dd.traffic.months.month]
-        			}
-
-            		make_total(dd.traffic.total);
-            		$.each(shitty_months, function(iii, ddd) {
-            			//console.log("loop months")
-            			//console.log(ddd)
-            			if (ddd.date.month == current_month) {
-            				console.log("current_month")
-            				console.log(ddd)
-            				make_current_month(ddd)
-            			} else if (ddd.date.month == last_month) {
-            				console.log("last_month")
-            				console.log(ddd)
-            				make_last_month(ddd);
-            			}
-
-            		})
-
-
-                    var p = $('<div>').addClass('row-fluid').attr('id', dd.id);
-                    // w h needs to hardcoded in canvas
-                    var m = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'month_' + dd.id));
-                    var d = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'day_' + dd.id));
-                    var h = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'hour_' + dd.id));
-
-                    p.append(m);
-                    p.append(d);
-                    p.append(h);
-                    t.append(p);
+                make_total(dd.traffic.total);
+                $.each(shitty_months, function(iii, ddd) {
+                    if (ddd.date.month == current_month) {
+                        make_current_month(ddd);
+                    } else if (ddd.date.month == last_month) {
+                        make_last_month(ddd);
+                    }
 
                 });
 
 
+                var p = $('<div>').addClass('row-fluid').attr('id', dd.id);
+                // w h needs to hardcoded in canvas
+                var m = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'month_' + dd.id));
+                var d = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'day_' + dd.id));
+                var h = $('<div>').addClass("span4").append($('<canvas width=400px; height=400px">').attr('id', 'hour_' + dd.id));
 
-			// make the fucking table
-			r = $('<div>').addClass("row-fluid bwinfocontainer").html('<div class="bwinfo"><span class="pull left">Bandwidth stats</span></h4><span class="pull-right bw_updated">x</span></div>')
-			r.append('<table class="table table-striped table-hover"> <thead> <tr> <th>Periode</th> <th class="">Download</th> <th class="">Upload</th> <th class="">Total</th> </tr></thead> <tbody id="bw_table_body"></tbody></table>')
-			//table.append()
-			//r.append(table)
-			t.append(r)// some table stuff :P
+                p.append(m);
+                p.append(d);
+                p.append(h);
+                t.append(p);
+
+            });
+
+            // make the fucking table
+            r = $('<div>').addClass("row-fluid bwinfocontainer").html('<div class="bwinfo"><h4><span class="pull left">Bandwidth stats</span></h4><span class="pull-right bw_updated"></span></div>');
+            r.append('<table class="table table-striped table-hover"> <thead> <tr> <th>Period</th> <th class="">Download</th> <th class="">Upload</th> <th class="">Total</th> </tr></thead> <tbody id="bw_table_body"></tbody></table>');
+            t.append(r);
 
 
         }
 
     });
 
-			var tr_this_month = $('<tr>').html('<td>This month</td><td>' + getReadableFileSizeString(usage_current_month.rx) + '</td><td>' + getReadableFileSizeString(usage_current_month.tx) + '</td><td>' + getReadableFileSizeString(usage_current_month.rx + usage_current_month.tx) + '</td>')
-			var tr_last_month = $('<tr>').html('<td>Last month</td><td>' + getReadableFileSizeString(usage_last_month.rx) + '</td><td>' + getReadableFileSizeString(usage_last_month.tx) + '</td><td>' + getReadableFileSizeString(usage_last_month.rx + usage_last_month.tx) + '</td>')
-			var tr_total = $('<tr>').html('<td>Total</td><td>' + getReadableFileSizeString(usage_total.rx) + '</td><td>' + getReadableFileSizeString(usage_total.tx) + '</td><td>' + getReadableFileSizeString(usage_total.rx + usage_total.tx) + '</td>')
-			console.log("log info")
-			console.log(usage_total)
-			console.log(usage_last_month)
-			console.log(usage_current_month)
-			$('#bw_table_body').append(tr_this_month, tr_last_month, tr_total)
+    var tr_this_month = $('<tr>').html('<td>This month</td><td>' + getReadableFileSizeString(usage_current_month.rx) + '</td><td>' + getReadableFileSizeString(usage_current_month.tx) + '</td><td>' + getReadableFileSizeString(usage_current_month.rx + usage_current_month.tx) + '</td>');
+    var tr_last_month = $('<tr>').html('<td>Last month</td><td>' + getReadableFileSizeString(usage_last_month.rx) + '</td><td>' + getReadableFileSizeString(usage_last_month.tx) + '</td><td>' + getReadableFileSizeString(usage_last_month.rx + usage_last_month.tx) + '</td>');
+    var tr_total = $('<tr>').html('<td>Total</td><td>' + getReadableFileSizeString(usage_total.rx) + '</td><td>' + getReadableFileSizeString(usage_total.tx) + '</td><td>' + getReadableFileSizeString(usage_total.rx + usage_total.tx) + '</td>');
+    $('#bw_table_body').append(tr_this_month, tr_last_month, tr_total);
 
-    loaddb()
-    console.log("usage_total")
-    console.log(usage_total)
+    loaddb();
 }
 
 
@@ -230,16 +211,14 @@ function loaddb() {
     $.ajax({
         url: WEBDIR + 'vnstat/dumpdb',
         async: false,
-        success: function (data) {
-        	var interf = data["vnstat"]["interface"]
-        	if (typeof(data.vnstat["interface"].id) !== 'undefined'){
-        		var interf = [data["vnstat"]["interface"]]
-        	}
+        success: function(data) {
+            var interf = data["vnstat"]["interface"];
+            if (typeof(data.vnstat["interface"].id) !== 'undefined') {
+                interf = [data["vnstat"]["interface"]];
+            }
 
-            $.each(interf, function (n, ainterf) {
+            $.each(interf, function(n, ainterf) {
                 var z = ainterf;
-                console.log("z");
-                console.log(z);
                 var interfaceid = z.id;
                 var created = z.created.date;
                 var date = moment(created.day + created.month + created.year, "DD.MM.YYYY").format('DD.MM.YYYY');
@@ -265,95 +244,92 @@ function loaddb() {
 }
 
 function makechart(selector, interfaceid, d) {
-	console.log("makechart")
-	console.log(selector);
-	console.log(d)
-	var l;
-	if (selector == "day") {
-		l = find_last_30_days()
+    var l;
+    if (selector == "day") {
+        l = find_last_30_days();
 
-	} else if (selector == "month") {
-		l = find_last_12_months();
+    } else if (selector == "month") {
+        l = find_last_12_months();
 
-	} else if (selector == "hour") {
-		l = find_last_24_hours();
-	}
+    } else if (selector == "hour") {
+        l = find_last_24_hours();
+    }
 
-	var sel = selector + '_' + interfaceid
-	var ctx = $('#' + sel).get(0).getContext("2d");
-	parentwidth = $('#' + sel).parent().width()
-	parentheight = $('#' + sel).parent().height()
+    var sel = selector + '_' + interfaceid;
+    var ctx = $('#' + sel).get(0).getContext("2d");
+    parentwidth = $('#' + sel).parent().width();
+    parentheight = $('#' + sel).parent().height();
 
-	var data = {
-		labels: l,
+    var data = {
+        labels: l,
 
-	    datasets: [
-	        {
+        datasets: [
+            {
 
-	            label: "Download",
-	            fillColor: "rgba(220,220,220,0.2)",
-	            strokeColor: "#56ff00",//"rgba(220,220,220,1)",
-	            pointColor: "#56ff00",//"rgba(220,220,220,1)",
-	            pointStrokeColor: "#fff",
-	            pointHighlightFill: "#fff",
-	            pointHighlightStroke: "rgba(220,220,220,1)",
-	            // reverse the data so its the same way as a the chart
-	            data: d.drx.reverse(),
-	            title: "Download",
-	            //graphSubTitle: selector
-	        },
-	        {
+                label: "Download",
+                fillColor: "rgba(220,220,220,0.2)",
+                strokeColor: "#56ff00", //"rgba(220,220,220,1)",
+                pointColor: "#56ff00", //"rgba(220,220,220,1)",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(220,220,220,1)",
+                // reverse the data so its the same way as a the chart
+                data: d.drx.reverse(),
+                title: "Download",
+         },
+            {
 
-	            label: "Upload",
-	            fillColor: "rgba(151,187,205,0.2)",
-	            strokeColor: "#0038ff",//"rgba(151,187,205,1)",
-	            pointColor: "#0038ff",//"rgba(151,187,205,1)",
-	            pointStrokeColor: "#fff",
-	            pointHighlightFill: "#fff",
-	            pointHighlightStroke: "rgba(151,187,205,1)",
-	            data: d.dtx.reverse(),
-	            title: "Upload",
-	            //graphSubTitle: selector
-	        },
-	        {
-	            label: "Total",
-	            fillColor: "rgba(151,187,205,0.2)", // red #FF0000
-	            strokeColor: "#EC7886", //rgba(151,187,205,1)",
-	            pointColor: "#EC7886",//"rgba(151,187,205,1)",
-	            pointStrokeColor: "#fff",
-	            pointHighlightFill: "#fff",
-	            pointHighlightStroke: "rgba(151,187,205,1)",
-	            data: d.dt.reverse(),
-	            title: "Total",
-	            //graphSubTitle: selector
-	        }
-	    ]
-	};
-	// Would have been nice but to many datapoints
-	//inGraphDataShow:true
-	// annotateDisplay can cause problems, remove in that case.
-	options = {showScale: true,
-			inGraphDataShow: false,
-	 		//scaleLabel: "<%=value%> GIB",
-	 		graphTitle : selector,
-	 		legend : true,
-	 		responsive: true,
-	 		annotateDisplay: true,
-	 		yAxisUnit: "GIB",
-	 		yAxisUnitFontSize: 11,
-	 		//inGraphDataTmpl: "<%=v2.toFixed(2)%>",
-	 		annotateLabel: "<%=(v1 == '' ? '' : v1) + (v1!='' && v2 !='' ? ' -  ' : '')+(v2 == '' ? '' : v2)+(v1!='' || v2 !='' ? ': ' : ' ') + v3.toFixed(2)%>",
-		}
-	new Chart(ctx).Line(data, options);
+                label: "Upload",
+                fillColor: "rgba(151,187,205,0.2)",
+                strokeColor: "#0038ff", //"rgba(151,187,205,1)",
+                pointColor: "#0038ff", //"rgba(151,187,205,1)",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(151,187,205,1)",
+                data: d.dtx.reverse(),
+                title: "Upload",
+         },
+            {
+                label: "Total",
+                fillColor: "rgba(151,187,205,0.2)", // red #FF0000
+                strokeColor: "#EC7886", //rgba(151,187,205,1)",
+                pointColor: "#EC7886", //"rgba(151,187,205,1)",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(151,187,205,1)",
+                data: d.dt.reverse(),
+                title: "Total",
+         }
+     ]
+    };
+    // Would have been nice but to many datapoints
+    //inGraphDataShow:true
+    // annotateDisplay can cause problems, remove in that case.
+    options = {
+        showScale: true,
+        inGraphDataShow: false,
+        graphTitle: selector,
+        legend: true,
+        responsive: true,
+        annotateDisplay: true,
+        yAxisUnit: "GIB",
+        yAxisUnitFontSize: 11,
+        graphSubTitle: interfaceid,
+        graphSubTitleFontSize: 10,
+        graphSubTitleSpaceBefore: 0,
+        graphSubTitleSpaceAfter: 2,
+        //inGraphDataTmpl: "<%=v2.toFixed(2)%>",
+        annotateLabel: "<%=(v1 == '' ? '' : v1) + (v1!='' && v2 !='' ? ' -  ' : '')+(v2 == '' ? '' : v2)+(v1!='' || v2 !='' ? ': ' : ' ') + v3.toFixed(2)%>",
+    };
+    new Chart(ctx).Line(data, options);
 }
 
-// grab form default.js instead? use math.pow
 function getReadableFileSizeString(fileSizeInBytes) {
     var i = 0;
-    var byteUnits = [' KB',' MB', ' GB', ' TB', ' PB'];
+    var byteUnits = [' KB', ' MB', ' GB', ' TB', ' PB'];
     do {
         fileSizeInBytes = fileSizeInBytes / 1024;
         i++;
     } while (fileSizeInBytes > 1024);
     return fileSizeInBytes.toFixed(2) + byteUnits[i];
-};
+}
