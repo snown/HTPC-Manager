@@ -13,7 +13,7 @@ from sqlobject import SQLObject, SQLObjectNotFound
 from sqlobject.col import StringCol, IntCol
 from htpc.proxy import get_image
 import logging
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 
 
 class KodiServers(SQLObject):
@@ -93,6 +93,8 @@ class Kodi(object):
     @require()
     def index(self):
         """ Generate page from template """
+        print htpc.role_user
+        print htpc.role_admin
         return htpc.LOOKUP.get_template('kodi.html').render(scriptname='kodi')
 
     @cherrypy.expose()
@@ -180,7 +182,7 @@ class Kodi(object):
                 return 0
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def delserver(self, id):
         """ Delete a server """
         self.logger.debug("Deleting server " + str(id))
@@ -375,6 +377,7 @@ class Kodi(object):
 
     @cherrypy.expose()
     @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def ExecuteAddon(self, addon, cmd0='', cmd1=''):
         if cmd0 == 'undefined':
@@ -415,6 +418,7 @@ class Kodi(object):
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require(member_of(htpc.role_user))
     def Enable_DisableAddon(self, addonid=None, enabled=None):
         kodi = Server(self.url('/jsonrpc', True))
         return kodi.Addons.SetAddonEnabled(addonid=addonid, enabled=bool(int(enabled)))
@@ -429,6 +433,7 @@ class Kodi(object):
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require()
     def PlayItem(self, item=None, type=None):
         """ Play a file in kodi """
         self.logger.debug("Playing '%s' of the type %s", item, type)
@@ -469,7 +474,7 @@ class Kodi(object):
             return kodi.Playlist.Add(playlistid=0, item={'songid': int(item)})
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def RemoveItem(self, item, playlistid=0):
         """ Remove a file from the playlist """
@@ -620,7 +625,7 @@ class Kodi(object):
             return
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def System(self, action=''):
         """ Various system commands """
@@ -639,7 +644,7 @@ class Kodi(object):
             return 'Rebooting kodi.'
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Wake(self):
         """ Send WakeOnLan package """
@@ -725,7 +730,7 @@ class Kodi(object):
             return
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Library(self, do='scan', lib='video'):
         kodi = Server(self.url('/jsonrpc', True))

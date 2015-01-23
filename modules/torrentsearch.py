@@ -7,9 +7,10 @@ import jsonrpclib
 import logging
 from ts import norbits
 from ts import fenopy
+from cherrypy.lib.auth2 import require, member_of
 
 
-class Torrentsearch:
+class Torrentsearch(object):
     def __init__(self):
         self.logger = logging.getLogger('modules.torrentsearch')
         htpc.MODULES.append({
@@ -29,11 +30,13 @@ class Torrentsearch:
         })
 
     @cherrypy.expose()
+    @require()
     def index(self, query='', **kwargs):
         return htpc.LOOKUP.get_template('torrentsearch.html').render(query=query, scriptname='torrentsearch')
 
     # Search all, add categorys and providers later
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def search(self, query=None):
         r = []
@@ -45,7 +48,6 @@ class Torrentsearch:
             r += self.search_norbits(query, 'tv')
         return r
 
-    @cherrypy.expose()
     def btn(self, query=None):
         btn = jsonrpclib.Server('http://api.btnapps.net')
         result = btn.getTorrents(htpc.settings.get('torrentsearch_btn_apikey', ''), query, 999)

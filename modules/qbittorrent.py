@@ -44,18 +44,19 @@ class Qbittorrent:
     @cherrypy.expose()
     @require()
     def qbturl(self):
-        host = htpc.settings.get("qbittorrent_host", "")
-        port = htpc.settings.get("qbittorrent_port", "")
-        username = htpc.settings.get("qbittorrent_username", "")
-        password = htpc.settings.get("qbittorrent_password", "")
-        ssl = "s" if htpc.settings.get("qbittorret_ssl", 0) else ""
-        url = "http%s://%s:%s/" % (ssl, host, port)
+        if htpc.settings.get('qbittorrent_enable'):
+            host = htpc.settings.get("qbittorrent_host", "")
+            port = htpc.settings.get("qbittorrent_port", "")
+            username = htpc.settings.get("qbittorrent_username", "")
+            password = htpc.settings.get("qbittorrent_password", "")
+            ssl = "s" if htpc.settings.get("qbittorret_ssl", 0) else ""
+            url = "http%s://%s:%s/" % (ssl, host, port)
 
-        realm = "Web UI Access"
-        authhandler = urllib2.HTTPDigestAuthHandler()
-        authhandler.add_password(realm, url, username, password)
-        opener = urllib2.build_opener(authhandler)
-        urllib2.install_opener(opener)
+            realm = "Web UI Access"
+            authhandler = urllib2.HTTPDigestAuthHandler()
+            authhandler.add_password(realm, url, username, password)
+            opener = urllib2.build_opener(authhandler)
+            urllib2.install_opener(opener)
 
         return url
 
@@ -178,7 +179,7 @@ class Qbittorrent:
             self.logger.info('%s %s is sendt to qBittorrent' % (torrentname, link))
         except Exception as e:
             self.logger.error('Failed to send %s %s to qBittorrent %s' % (link, torrentname, e))
-    
+
     # Sets global upload and download speed
     @cherrypy.expose()
     @require()

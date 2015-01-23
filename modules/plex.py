@@ -14,7 +14,7 @@ import urllib
 import base64
 import uuid
 import platform
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 
 """
 Credits.
@@ -98,10 +98,10 @@ class Plex:
             plex_hide_homemovies = htpc.settings.get('plex_hide_homemovies', False)
             movies = []
 
-            for section in self.JsonLoader(urlopen(Request('http://%s:%s/library/sections' % (plex_host, plex_port), headers=self.getHeaders())).read())["_children"]:
+            for section in self.JsonLoader(urlopen(Request('http://%s:%s/library/sections' % (plex_host, plex_port), timeout=10, headers=self.getHeaders())).read())["_children"]:
                 if section['type'] == "movie":
                     if section['agent'] != "com.plexapp.agents.none" or not plex_hide_homemovies:
-                        for movie in self.JsonLoader(urlopen(Request('http://%s:%s/library/sections/%s/all?type=1&sort=addedAt:desc&X-Plex-Container-Start=0&X-Plex-Container-Size=%s' % (plex_host, plex_port, section["key"], limit), headers=self.getHeaders())).read())["_children"]:
+                        for movie in self.JsonLoader(urlopen(Request('http://%s:%s/library/sections/%s/all?type=1&sort=addedAt:desc&X-Plex-Container-Start=0&X-Plex-Container-Size=%s' % (plex_host, plex_port, section["key"], limit), timeout=10, headers=self.getHeaders())).read())["_children"]:
                             jmovie = {}
                             genre = []
 
@@ -568,7 +568,7 @@ class Plex:
             return
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Wake(self):
         """ Send WakeOnLan package """
@@ -733,7 +733,7 @@ class Plex:
         return {'playing_items': playing_items}
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def UpdateLibrary(self, section_type=None):
         """ Get information about current playing item """
@@ -755,7 +755,7 @@ class Plex:
             return 'Failed to update library!'
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def ControlPlayer(self, player, action, value=''):
         """ Various commands to control Plex Player """

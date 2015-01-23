@@ -7,10 +7,10 @@ from urllib import quote
 from urllib2 import urlopen
 from json import loads
 import logging
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 
 
-class Sickbeard:
+class Sickbeard(object):
     def __init__(self):
         self.logger = logging.getLogger("modules.sickbeard")
         htpc.MODULES.append({
@@ -153,21 +153,21 @@ class Sickbeard:
         return self.fetch("episode.search&tvdbid=" + tvdbid + "&season=" + season + "&episode=" + episode, False, 45)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def ForceFullUpdate(self, tvdbid):
         self.logger.debug("Force full update for tvdbid " + tvdbid)
         return self.fetch("show.update&tvdbid=" + tvdbid)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def RescanFiles(self, tvdbid):
         self.logger.debug("Rescan all local files for tvdbid " + tvdbid)
         return self.fetch("show.refresh&tvdbid=" + tvdbid)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def RemoveShow(self, tvdbid):
         self.logger.debug("Removing Show tvdbid " + tvdbid)

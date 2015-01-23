@@ -6,10 +6,10 @@ import urllib2
 import base64
 import htpc
 from json import dumps, loads
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 
 
-class Squeezebox:
+class Squeezebox(object):
     def __init__(self):
         htpc.MODULES.append({
             'name': 'Squeezebox',

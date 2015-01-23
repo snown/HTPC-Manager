@@ -7,10 +7,10 @@ from urllib import quote, urlencode
 from urllib2 import urlopen
 from json import loads
 import logging
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 
 
-class Sickrage:
+class Sickrage(object):
     def __init__(self):
         self.logger = logging.getLogger('modules.sickrage')
         htpc.MODULES.append({
@@ -134,7 +134,7 @@ class Sickrage:
         return self.fetch('show.seasons&tvdbid=' + tvdbid + '&season=' + season)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Postprocess(self, path='', force_replace=False, return_data=False, is_priority=False, type=False):
         self.logger.debug("Postprocess")
@@ -143,7 +143,7 @@ class Sickrage:
         return self.fetch('postprocess' + path, False, 120)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Restart(self):
         self.logger.debug("Restart sb")
@@ -164,21 +164,21 @@ class Sickrage:
         return self.fetch('episode.subtitlesearch&tvdbid=' + tvdbid + '&season=' + season + '&episode=' + episode, False, 45)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Shutdown(self):
         self.logger.debug("Shutdown sickrage")
         return self.fetch('sb.shutdown', False, 20)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def ForceFullUpdate(self, tvdbid):
         self.logger.debug("Force full update for tvdbid " + tvdbid)
         return self.fetch("show.update&tvdbid=" + tvdbid)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def RescanFiles(self, tvdbid):
         self.logger.debug("Rescan all local files for tvdbid " + tvdbid)
@@ -186,7 +186,7 @@ class Sickrage:
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
-    @require()
+    @require(member_of(htpc.role_user))
     def RemoveShow(self, indexerid, show_name=''):
         self.logger.debug("Delete %s from Sickrage indexerid %s" % (show_name, indexerid))
         return self.fetch("show.delete&indexerid=%s" % indexerid)

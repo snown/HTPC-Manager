@@ -9,6 +9,7 @@ import cherrypy
 import htpc
 import logging
 import logging.handlers
+from cherrypy.lib.auth2 import require, member_of
 from settings import Setting
 
 
@@ -61,12 +62,14 @@ class Log:
         htpc.LOGGER.info("Loglevel set to " + htpc.LOGLEVEL)
 
     @cherrypy.expose()
+    @require()
     def index(self):
         """ Show log """
         return htpc.LOOKUP.get_template('log.html').render(scriptname='log')
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require()
     def getlog(self, lines=10, level=2):
         """ Get log as JSON """
         levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'][-int(level):]
@@ -86,6 +89,7 @@ class Log:
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require(member_of(htpc.role_admin))
     def deletelog(self):
         try:
             open(self.logfile, 'w').close()

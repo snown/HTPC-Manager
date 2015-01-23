@@ -407,7 +407,7 @@ class Stats(object):
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
-    @require(member_of("admin"))
+    @require(member_of(htpc.role_admin))
     def command(self, cmd=None, pid=None, signal=None):
         dmsg = {}
         try:
@@ -451,7 +451,7 @@ class Stats(object):
             self.logger.error("Error trying to %s" % cmd, e)
 
     @cherrypy.expose()
-    @require(member_of("admin"))
+    @require(member_of(htpc.role_admin))
     @cherrypy.tools.json_out()
     def cmdpopen(self, cmd=None):
         d = {}

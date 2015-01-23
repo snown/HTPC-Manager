@@ -26,6 +26,7 @@ import logging
 import tarfile
 import shutil
 import platform
+from cherrypy.lib.auth2 import require, member_of
 
 from htpc.root import do_restart
 
@@ -96,6 +97,7 @@ class Updater:
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require(member_of(htpc.role_admin))
     def index(self, force=False):
         """ Update on POST. Check for new updates on GET. """
         if cherrypy.request.method.upper() == 'POST':
@@ -110,6 +112,7 @@ class Updater:
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require(member_of(htpc.role_admin))
     def status(self):
         """ method to determine if HTPC Manager is currently updating """
         return self.updateEngine.UPDATING
@@ -177,6 +180,7 @@ class Updater:
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require(member_of(htpc.role_admin))
     def branches(self):
         return self.updateEngine.branches()
 

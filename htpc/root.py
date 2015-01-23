@@ -28,7 +28,7 @@ class RestrictedArea:
     # all methods in this controller (and subcontrollers) is
     # open only to members of the admin group
     _cp_config = {
-        'auth.require': [member_of('admin')]
+        'auth.require': [member_of(htpc.role_admin)]
     }
 
 
@@ -54,7 +54,7 @@ class Root:
         return "An error occured"
 
     @cherrypy.expose()
-    @require(member_of("admin"))
+    @require(member_of(htpc.role_admin))
     def shutdown(self):
         """ Shutdown CherryPy and exit script """
         self.logger.info("Shutting down htpc-manager.")
@@ -71,7 +71,7 @@ class Root:
 
     @cherrypy.tools.json_out()
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_admin))
     def restart(self):
         """ Shutdown script and rerun with the same variables """
         self.logger.info("Restarting htpc-manager.")

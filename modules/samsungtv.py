@@ -12,6 +12,7 @@ import urllib2
 import re
 import itertools
 import operator
+from cherrypy.lib.auth2 import require, member_of
 from operator import itemgetter
 #from uuid import getnode as get_mac
 
@@ -43,6 +44,7 @@ class Samsungtv:
         return htpc.LOOKUP.get_template('samsungtv.html').render(scriptname='samsungtv')
 
     @cherrypy.expose()
+    @require(member_of(htpc.role_user))
     def sendkey(self, action):
         try:
             key = action

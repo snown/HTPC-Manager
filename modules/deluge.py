@@ -10,7 +10,7 @@ from json import loads, dumps
 import logging
 import cookielib
 from StringIO import StringIO
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 
 
 class Deluge:
@@ -84,21 +84,21 @@ class Deluge:
         return self.fetch('core.get_session_status', [fields])
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def start(self, torrentId):
         torrents = [torrentId]
         return self.fetch('core.resume_torrent', [torrents])
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def stop(self, torrentId):
         torrents = [torrentId]
         return self.fetch('core.pause_torrent', [torrents])
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def remove(self, torrentId, removeData):
         removeDataBool = bool(int(removeData))
@@ -106,6 +106,7 @@ class Deluge:
 
     #Used for torrent search
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def to_client(self, link, torrentname, **kwargs):
         try:

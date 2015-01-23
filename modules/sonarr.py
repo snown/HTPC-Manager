@@ -3,7 +3,7 @@
 
 import cherrypy
 import htpc
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 import requests
 import urllib
 import logging
@@ -11,7 +11,7 @@ from json import loads, dumps
 import datetime as DT
 
 
-class Sonarr:
+class Sonarr(object):
     def __init__(self):
         self.logger = logging.getLogger('modules.sonarr')
         htpc.MODULES.append({
@@ -118,7 +118,7 @@ class Sonarr:
         return self.fetch('Series/%s' % id)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Delete_Show(self, id, title, delete_date=None):
         self.logger.debug('Deleted tvshow %s' % title)
@@ -189,7 +189,7 @@ class Sonarr:
         return self.fetch('profile')
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def Command(self, **kwargs):
         k = kwargs
         cherrypy.response.headers['Content-Type'] = "application/json"
@@ -204,7 +204,7 @@ class Sonarr:
 
         return self.fetch(path='command', data=data, type='post')
 
-    #Search for a serie
+    # Search for a serie
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()

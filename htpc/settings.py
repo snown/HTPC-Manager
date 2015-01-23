@@ -30,7 +30,7 @@ class Settings:
         Setting.createTable(ifNotExists=True)
 
     @cherrypy.expose()
-    @require(member_of("admin"))
+    @require(member_of(htpc.role_admin))
     def index(self, **kwargs):
         """ Set keys if settings are received. Show settings page """
         if kwargs:
@@ -51,6 +51,7 @@ class Settings:
             #self.logger.debug("Unable to find the selected object: " + key)
             return defval
 
+    @require(member_of(htpc.role_admin))
     def set(self, key, val):
         """ Save a setting to the database """
         self.logger.debug("Saving settings %s to the database." % key)
@@ -60,6 +61,7 @@ class Settings:
         except SQLObjectNotFound:
             Setting(key=key, val=val)
 
+    @require(member_of(htpc.role_admin))
     def get_templates(self):
         """ Get a list of available templates """
         templates = []
@@ -68,6 +70,7 @@ class Settings:
             templates.append({'name': template, 'value': template, 'selected': current})
         return templates
 
+    @require(member_of(htpc.role_admin))
     def get_themes(self):
         """ Get a list of available themes """
         path = os.path.join(htpc.TEMPLATE, "css/themes/")
@@ -80,7 +83,7 @@ class Settings:
 
     """ Save json with custom urls """
     @cherrypy.expose()
-    @require(member_of("admin"))
+    @require(member_of(htpc.role_admin))
     @cherrypy.tools.json_out()
     def urls(self, **kwargs):
         if kwargs:
@@ -98,7 +101,7 @@ class Settings:
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
-    @require(member_of("admin"))
+    @require(member_of(htpc.role_admin))
     def delete_cache(self):
         try:
             cache_folder = os.path.join(htpc.DATADIR, 'images/')
@@ -112,7 +115,7 @@ class Settings:
             return {'failed': e}
 
     @cherrypy.expose()
-    @require(member_of("admin"))
+    @require(member_of(htpc.role_admin))
     def test(self):
         """ Used for testing stuff """
         return "testing rollback"

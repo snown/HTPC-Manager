@@ -5,7 +5,7 @@ import cherrypy
 import htpc
 from htpc.proxy import get_image
 import requests
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 import logging
 import hashlib
 
@@ -130,21 +130,21 @@ class Couchpotato:
         return self.fetch("movie.add/?profile_id=" + profile + "&identifier=" + movieid + "&title=" + title)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def EditMovie(self, id, profile, title):
         self.logger.debug("Editing movie")
         return self.fetch("movie.edit/?id=" + id + "&profile_id=" + profile + "&default_title=" + title)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def RefreshMovie(self, id):
         self.logger.debug("Refreshing movie")
         return self.fetch("movie.refresh/?id=" + id)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def DeleteMovie(self, id=""):
         self.logger.debug("Deleting movie")
@@ -165,7 +165,7 @@ class Couchpotato:
         return self.fetch("release.manual_download/?id=" + id)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def IgnoreRelease(self, id=""):
         self.logger.debug("Downloading movie")
@@ -180,6 +180,7 @@ class Couchpotato:
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
+    @require()
     def GetCategories(self):
         self.logger.debug("Feching categories")
         return self.fetch('category.list')

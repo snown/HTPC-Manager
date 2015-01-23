@@ -7,10 +7,10 @@ from urllib import quote
 from urllib2 import urlopen
 from json import loads
 import logging
-from cherrypy.lib.auth2 import require
+from cherrypy.lib.auth2 import require, member_of
 
 
-class Sabnzbd:
+class Sabnzbd(object):
     def __init__(self):
         self.logger = logging.getLogger("modules.sabnzbd")
         htpc.MODULES.append({
@@ -89,7 +89,7 @@ class Sabnzbd:
         return self.fetch("&mode=warnings")
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def TogglePause(self, mode=""):
         self.logger.debug("Pausing")
@@ -105,21 +105,21 @@ class Sabnzbd:
         return self.fetch("&mode=addurl&name=" + quote(nzb_url) + nzb_category)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def DeleteNzb(self, id):
         self.logger.debug("Deleting nzb")
         return self.fetch("&mode=queue&name=delete&value=" + id)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def DeleteHistory(self, id):
         self.logger.debug("Deleting history")
         return self.fetch("&mode=history&name=delete&value=" + id)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Retry(self, id):
         self.logger.debug("Retry download")
@@ -133,21 +133,21 @@ class Sabnzbd:
         return self.fetch("&mode=get_cats")
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def ChangeCategory(self, id, cat):
         self.logger.debug("Changing category of download")
         return self.fetch("&mode=change_cat&value=" + id + "&value2=" + cat)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def SetSpeed(self, speed):
         self.logger.debug("Setting speed-limit")
         return self.fetch("&mode=config&name=speedlimit&value=" + speed)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Swap(self, v1, v2):
         self.logger.debug("Swaping nzb position to %s" % v2)
