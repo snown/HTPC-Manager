@@ -96,6 +96,8 @@ def load_modules():
     htpc.ROOT.samsungtv = Samsungtv()
     from modules.vnstat import Vnstat
     htpc.ROOT.vnstat = Vnstat()
+    from modules.weather import Weather
+    htpc.ROOT.weather = Weather()
 
 
 def update_needed():
