@@ -30,6 +30,10 @@ $(document).ready(function () {
             notify(link.text(), data, 'success')
         })
     })
+
+    // Set the correct images path for raty plugin
+    $.fn.raty.defaults.path = WEBDIR + '/img'
+
     $('a.ajax-confirm').click(function (e) {
         e.preventDefault()
         var link = $(this)
@@ -42,6 +46,17 @@ $(document).ready(function () {
     $('a.confirm').click(function (e) {
         return(confirm($(this).attr('title') + '?'))
     })
+
+    $('.do_update').click(function (e) {
+        e.preventDefault();
+        $.post(WEBDIR + "update/", function (data) {
+            if (data == 1) {
+                showModal('Installing update', '<div class="progress progress-striped active"><div class="bar" style="width:100%"></div></div>', '');
+            } else {
+                notify('Update', 'An error occured while updating!', 'error');
+            }
+        });
+    });
 
     $('.btn-check-update').click(function (e) {
         e.preventDefault()
@@ -131,7 +146,7 @@ function bytesToSize(bytes, precision) {
 function parseDate(sec) {
     var date = new Date(sec*1000)
     var year = pad(date.getFullYear(), 2)
-    var month = pad(date.getMonth(), 2)
+    var month = pad((date.getMonth() + 1), 2)
     var day = pad(date.getDate(), 2)
     var hour = pad(date.getHours(), 2)
     var min = pad(date.getMinutes(), 2)

@@ -45,8 +45,15 @@ def start():
         """ Lets see if the that username and password is already in the db"""
         try:
             user = Manageusers.selectBy(username=htpc.USERNAME).getOne()
+            # If the user exist
+            if user:
+                # Activate the new password
+                user.password = htpc.PASSWORD
+
         except SQLObjectNotFound:
+            logger.debug("Added htpc.USERNAME and htpc.PASSWORD to Manageusers table")
             Manageusers(username=htpc.USERNAME, password=htpc.PASSWORD, role='admin')
+
         logger.debug('Updating cherrypy config, activating sessions and auth')
 
         cherrypy.config.update({
@@ -95,7 +102,6 @@ def start():
         })
 
     if htpc.settings.get('app_use_proxy_headers'):
-        print "Enabling proxy heaers"
         cherrypy.config.update({
                 'tools.proxy.on': True
 
@@ -105,9 +111,6 @@ def start():
         cherrypy.config.update({
                 'tools.proxy.base': str(htpc.settings.get('app_use_proxy_headers_basepath'))
         })
-
-
-
 
     # Daemonize cherrypy if specified
     if htpc.DAEMON:
@@ -120,6 +123,12 @@ def start():
     # Create PID if specified
     if htpc.PID:
         PIDFile(cherrypy.engine, htpc.PID).subscribe()
+
+    def stopp_ap():
+        htpc.SCHED.shutdown(wait=False)
+
+    stopp_ap.priority = 10
+    cherrypy.engine.subscribe('stop', stopp_ap)
 
     # Set static directories
     webdir = os.path.join(htpc.RUNDIR, htpc.TEMPLATE)

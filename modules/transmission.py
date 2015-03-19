@@ -8,9 +8,10 @@ import base64
 from json import loads, dumps
 import logging
 from cherrypy.lib.auth2 import require
+from htpc.helpers import fix_basepath, striphttp
 
 
-class Transmission:
+class Transmission(object):
     # Transmission Session ID
     sessionId = ''
 
@@ -61,16 +62,9 @@ class Transmission:
         password = kwargs["transmission_password"]
         basepath = kwargs["transmission_rpcbasepath"]
 
-        if basepath:
-            if not basepath.startswith('/'):
-                basepath = '/%s' % basepath
-            if not basepath.endswith('/'):
-                basepath += '/'
-        else:
-            # Default basepath is transmission
-            basepath = '/transmission/'
-
-        url = 'http://' + host + ':' + str(port) + basepath + 'rpc/'
+        if not basepath:
+            basepath = fix_basepath("/transmission/")
+        url = 'http://%s:%s%srpc/' % (striphttp(host), port, basepath)
 
         # format post data
         data = {'method': 'session-get'}
@@ -92,7 +86,7 @@ class Transmission:
             response = urllib2.urlopen(request).read()
             return loads(response)
         except urllib2.HTTPError, e:
-             # Fetching url failed Maybe Transmission session must be renewed
+            # Fetching url failed Maybe Transmission session must be renewed
             if (e.getcode() == 409 and e.headers['X-Transmission-Session-Id']):
                 self.logger.debug("Setting new session ID provided by Transmission")
 
@@ -114,11 +108,13 @@ class Transmission:
             return
 
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def session(self):
         return self.fetch('session-get')
 
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def set_downspeed(self, speed):
         print "running", speed
@@ -127,6 +123,7 @@ class Transmission:
         return self.fetch('session-set', {'speed-limit-down': int(speed), 'speed-limit-down-enabled': True})
 
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def set_upspeed(self, speed):
         if int(speed) == 0:
@@ -181,6 +178,7 @@ class Transmission:
 
     #For torrent search
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def to_client(self, link, torrentname, **kwargs):
         try:
@@ -195,19 +193,11 @@ class Transmission:
         """ Do request to Transmission api """
         self.logger.debug("Request transmission method: " + method)
 
-        host = htpc.settings.get('transmission_host', '')
+        host = striphttp(htpc.settings.get('transmission_host', ''))
         port = str(htpc.settings.get('transmission_port', ''))
 
         # Default basepath is transmission
-        basepath = htpc.settings.get('transmission_rpcbasepath', '/transmission/')
-
-        if basepath:
-            if not basepath.startswith('/'):
-                basepath = '/%s' % basepath
-            if not basepath.endswith('/'):
-                basepath += '/'
-        else:
-            basepath = '/transmission/'
+        basepath = fix_basepath(htpc.settings.get('transmission_rpcbasepath', '/transmission/'))
 
         url = 'http://' + host + ':' + str(port) + basepath + 'rpc/'
 
@@ -233,7 +223,7 @@ class Transmission:
             response = urllib2.urlopen(request).read()
             return loads(response)
         except urllib2.HTTPError, e:
-             # Fetching url failed Maybe Transmission session must be renewed
+            # Fetching url failed Maybe Transmission session must be renewed
             if (e.getcode() == 409 and e.headers['X-Transmission-Session-Id']):
                 self.logger.debug("Setting new session ID provided by Transmission")
 

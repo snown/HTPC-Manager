@@ -10,6 +10,9 @@ import os
 import sys
 import htpc
 import webbrowser
+import locale
+from threading import Thread
+import logging
 
 
 def parse_arguments():
@@ -25,13 +28,13 @@ def parse_arguments():
     parser.add_argument('--port', type=int,
                         help='Use a specific port')
     parser.add_argument('--shell', action='store_true', default=False,
-                        help='WARNING! DO NOT USE UNLESS YOU KNOW WHAT .POPEN CAN BE USED FOR (LIKE WIPEING YOUR HARDDRIVE).')
+                        help='WARNING! DO NOT USE UNLESS YOU KNOW WHAT .POPEN CAN BE USED FOR (LIKE WIPING YOUR HARDDRIVE).')
     parser.add_argument('--daemon', action='store_true', default=False,
                         help='Daemonize process')
     parser.add_argument('--pid', default=False,
                         help='Generate PID file at location')
     parser.add_argument('--debug', action='store_true', default=False,
-                        help='Print debug text')
+                        help='Used while developing, prints debug messages uncensored and more..')
     parser.add_argument('--openbrowser', action='store_true', default=False,
                         help='Open the browser on server start')
     parser.add_argument('--webdir', default=None,
@@ -95,6 +98,15 @@ def load_modules():
     htpc.ROOT.samsungtv = Samsungtv()
     from modules.vnstat import Vnstat
     htpc.ROOT.vnstat = Vnstat()
+    from modules.headphones import Headphones
+    htpc.ROOT.headphones = Headphones()
+
+
+def init_sched():
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.interval import IntervalTrigger
+    htpc.SCHED = BackgroundScheduler()
+    htpc.SCHED.start()
 
 
 def main():
@@ -107,6 +119,26 @@ def main():
     # Set root and insert bundled libraies into path
     htpc.RUNDIR = os.path.dirname(os.path.abspath(sys.argv[0]))
     sys.path.insert(0, os.path.join(htpc.RUNDIR, 'libs'))
+
+    htpc.SYS_ENCODING = None
+
+    try:
+        locale.setlocale(locale.LC_ALL, "")
+        htpc.SYS_ENCODING = locale.getpreferredencoding()
+    except (locale.Error, IOError):
+        pass
+
+    # for OSes that are poorly configured I'll just force UTF-8
+    if not htpc.SYS_ENCODING or htpc.SYS_ENCODING in ('ANSI_X3.4-1968', 'US-ASCII', 'ASCII'):
+        htpc.SYS_ENCODING = 'UTF-8'
+
+    if not hasattr(sys, "setdefaultencoding"):
+            reload(sys)
+
+    # python 2.7.9 verifies certs by default. This disables it
+    if sys.version_info >= (2, 7, 9):
+        import ssl
+        ssl._create_default_https_context = ssl._create_unverified_context
 
     # Set datadir, create if it doesn't exist and exit if it isn't writable.
     htpc.DATADIR = os.path.join(htpc.RUNDIR, 'userdata/')
@@ -142,8 +174,14 @@ def main():
     htpc.WEBDIR = htpc.settings.get('app_webdir', '/')
     if args.webdir:
         htpc.WEBDIR = args.webdir
-    if not(htpc.WEBDIR.endswith('/')):
+
+    if not htpc.WEBDIR.startswith('/'):
+        htpc.WEBDIR = '/' + htpc.WEBDIR
+    if not htpc.WEBDIR.endswith('/'):
         htpc.WEBDIR += '/'
+
+    # Initialize Scheduler
+    init_sched()
 
     # Inititialize root and settings page
     load_modules()
@@ -171,7 +209,7 @@ def main():
     else:
         htpc.AUTH = False
 
-     # Resets the htpc manager password and username
+    # Resets the htpc manager password and username
     if args.resetauth:
         htpc.USERNAME = htpc.settings.set('app_username', '')
         htpc.PASSWORD = htpc.settings.set('app_password', '')

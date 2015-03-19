@@ -38,7 +38,9 @@
                 {'type':'text', 'label':'Rev proxy headers basepath', 'name':'app_use_proxy_headers_basepath', 'desc':'', 'value':settings.get('app_use_proxy_headers_basepath')},
                 {'type': 'select', 'label': 'Branch', 'name': 'branch', 'options':''},
                 {'type':'bool', 'label':'Open Browser', 'name':'openbrowser', 'desc':'Automatically open brower on server start', 'value':settings.get('openbrowser')},
-                {'type':'bool', 'label':'Use robots.txt', 'name':'robots', 'desc':'Stop bots from indexing your site', 'value':settings.get('robots')}
+                {'type':'bool', 'label':'Use robots.txt', 'name':'robots', 'desc':'Stop bots from indexing your site', 'value':settings.get('robots')},
+                {'type':'bool', 'label':'Check for updates', 'name':'app_check_for_updates', 'desc':'', 'value':settings.get('app_check_for_updates')},
+                {'type':'bool', 'label':'Auto update', 'name':'app_auto_update', 'desc':'', 'value':settings.get('app_auto_update')}
                 ], buttons=[
                         {'name':'Save', 'type':'submit', 'classes':'btn-primary'},
                         {'name':'Clear', 'type':'reset'},
@@ -84,11 +86,17 @@
                 {'type':'bool', 'label':'Show SABnzbd', 'name':'dash_sabnzbd',
                  'checked':bool(settings.get('dash_sabnzbd', 0))},
                 {'type':'bool', 'label':'Show Sickrage', 'name':'dash_sickrage',
-                 'checked':bool(settings.get('dash_sabnzbd', 0))},
+                 'checked':bool(settings.get('dash_sickrage', 0))},
                 {'type':'bool', 'label':'Show NZBGet', 'name':'dash_nzbget',
                  'checked':bool(settings.get('dash_nzbget', 0))},
-                 {'type':'bool', 'label':'Show System info', 'name':'dash_sysinfo',
-                  'checked':bool(settings.get('dash_sysinfo', 0))}
+                {'type':'bool', 'label':'Show System info', 'name':'dash_sysinfo',
+                  'checked':bool(settings.get('dash_sysinfo', 0))},
+                {'type':'bool', 'label':'Wanted Albums', 'name':'dash_wanted_albums',
+                  'checked':bool(settings.get('dash_wanted_albums', 0))},
+                {'type':'bool', 'label':'Show disks', 'name':'dash_disks',
+                  'checked':bool(settings.get('dash_disks', 0))},
+                {'type':'bool', 'label':'Show S.M.A.R.T. info', 'name':'dash_smart',
+                  'checked':bool(settings.get('dash_smart', 0))}
             ])}
 
             <form class="form-horizontal tab-pane" id="other" method="POST">

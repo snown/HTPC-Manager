@@ -7,7 +7,7 @@ function getCategories() {
             if (data == null) return false;
 
             var select = $('#catid').html('');
-            select.append($('<option>').html('Everything').attr('value','-1'));
+            select.append($('<option>').html('Everything').attr('value',''));
             $.each(data.category, function (c, cat) {
                 var option = $('<option>').html(cat["@attributes"]["name"]);
                 option.attr('value',cat["@attributes"]["id"])
@@ -62,36 +62,67 @@ function search(query, catid) {
                     $('#searchform').submit();
                     return false;
                 });
+
+                var usenetdate;
+                if (item.attr['usenetdate']) {
+                    var age = moment(item.attr['usenetdate']).format("YYYY-MM-DD")
+                    var temp = moment().diff(age, 'days')
+                    usenetdate = temp + ' d'
+
+                } else {
+                    usenetdate = 'N/A'
+                }
                 row.append($('<td>').append(cat));
+                row.append($('<td>').addClass('right').html(usenetdate));
                 row.append($('<td>').addClass('right').html(bytesToSize(item.attr['size'], 2)));
 
-
-                var toSabIcon = $('<img>')
-                .attr('src', '../img/sabnzbd.png')
-                .attr('title', 'Send to SABnzbd')
-                .attr('alt', 'Send to SABnzbd')
-                .css('cursor', 'pointer');
-                toSabIcon.click(function() {
-                    sendToSab(item)
-                });
-                row.append($('<td>').append(toSabIcon));
-
-                var toGetIcon = $('<img>')
-                .css('cursor', 'pointer')
-                .attr('src', '../img/nzbget.png')
-                .attr('title', 'Send to NzbGet')
-                .attr('alt', 'Send to NzbGet')
-                .css('cursor', 'pointer');
-                toGetIcon.click(function() {
-                    sendToGet(item)
-                });
-                row.append($('<td>').append(toGetIcon));
+                // Make a group of nzbclient buttons
+                row.append($('<td>').append(anc(item)));
 
                 $('#results_table_body').append(row);
                 if (stop) return false;
             });
         }
     });
+}
+
+function get_clients() {
+    $.getJSON(WEBDIR + "search/getclients", function (response) {
+        clients = response
+        return clients
+    });
+}
+
+function anc(nzb) {
+    var b = $('<div>').addClass('btn-group clearfix');
+    // Used to check if there is any active clients
+    var n = 0;
+    $.each(clients, function (i, client) {
+        if (client.active === 1) {
+            // If there any active clients add 1 to n
+            n += 1;
+            var button = $('<img>').addClass("btn btn-mini").attr('src', client.icon).
+            attr('title', "Send to " + client.client).
+            css("cursor", "pointer").click(function () {
+                sendToclient(nzb, client);
+            });
+
+            b.append(button);
+        }
+    });
+
+    // Manuel download button
+    var browserdl = $('<button>').addClass("btn btn-mini").attr('title', 'Download NZB to browser')
+        .css({
+        "cursor": "pointer",
+        "height": "18px"
+    }).click(function () {
+        downloadFile(nzb.link);
+    }).append($('<i>').addClass('icon-download-alt'));
+
+    b.append(browserdl);
+
+    return b;
 }
 
 function showDetails(data) {
@@ -105,11 +136,11 @@ function showDetails(data) {
 
     var modalImage = '';
     if (data.attr["coverurl"]) {
-        var url = WEBDIR + 'search/thumb?url='+data.attr['coverurl']+'&w=200&h=300';
+        var url = WEBDIR + 'search/thumb?url='+data.attr['coverurl']+'&w=200&h=300&category=';
         var modalImage = $('<div>').addClass('thumbnail pull-left');
         modalImage.append($('<img>').attr('src', url));
     } else if (data.attr["rageid"]) {
-        var url = WEBDIR + 'search/thumb?url=rageid'+data.attr['rageid']+'&w=200&h=300';
+        var url = WEBDIR + 'search/thumb?url=rageid'+data.attr['rageid']+'&w=200&h=300&category='+ data.category;
         var modalImage = $('<div>').addClass('thumbnail pull-left');
         modalImage.append($('<img>').attr('src', url));
     }
@@ -129,12 +160,29 @@ function showDetails(data) {
         modalInfo.append($('<p>').html('<b>Actors:</b> ' + data.attr['imdbactors']));
     }
     */
+    var posted;
+    if (data.attr['usenetdate']) {
+        posted = moment(data.attr['usenetdate']).fromNow()
+    } else {
+        posted = 'N/A'
+    }
+    modalInfo.append($('<p>').html('<b>Posted:</b> ' +  posted));
     modalInfo.append($('<p>').html('<b>Size:</b> ' + bytesToSize(data.attr['size'])));
     modalInfo.append($('<p>').html('<b>Grabs:</b> ' + data.attr['grabs']));
     modalInfo.append($('<p>').html('<b>Files:</b> ' + data.attr['files']));
-    var password = data.attr['password'];
-    if (password == 0) password = 'None';
-    modalInfo.append($('<p>').html('<b>Password:</b> ' + password));
+
+    if (data.attr['password']) {
+        var password = data.attr['password'];
+        if (password == 0) {
+        password = 'No';
+    }
+        else {
+        password = 'Yes';
+    }
+     modalInfo.append($('<p>').html('<b>Password:</b> ' + password));
+    }
+
+
     if(data.attr['imdbscore']) {
         var rating = $('<span>').raty({
             readOnly: true,
@@ -153,16 +201,36 @@ function showDetails(data) {
     modalBody.append(modalImage);
     modalBody.append(modalInfo);
 
-    var modalButtons = {
-        'SABnzbd' : function () {
-            sendToSab(data)
-            hideModal();
-        },
-        'NZBGget': function() {
-            sendToGet(data)
-            hideModal();
+    var modalButtons = {}
+    $.each(clients, function(i, v){
+        if (v.active === 1 && v.client === "nzbget") {
+            $.extend(modalButtons,{
+            'NZBget' : function() {
+                sendToGet(data)
+                hideModal();
+                }
+            });
+
         }
-    }
+        if (v.active === 1 && v.client === "sabnzbd") {
+            $.extend(modalButtons,{
+            'SABnzbd' : function() {
+                sendToSab(data)
+                hideModal();
+                }
+            });
+
+        }
+
+    })
+
+    // manual download to the browser
+    $.extend(modalButtons,{
+            'Download NZB' : function() {
+                downloadFile(data.link);
+            }
+    });
+
     if (data.attr['imdb']) {
         var link = 'http://www.imdb.com/title/tt' + data.attr['imdb'] + '/';
         $.extend(modalButtons,{
@@ -214,7 +282,21 @@ function sendToGet(item) {
     });
 }
 
+function sendToclient(item, client) {
+    return $.ajax({
+        url: WEBDIR + client.client + '/AddNzbFromUrl',
+        type: 'post',
+        dataType: 'json',
+        data: {nzb_url: item.link},
+        success: function (result) {
+            notify('', 'Sent ' + item.description+ ' to ' + client.client, 'info');
+        }
+    });
+}
+
+
 $(document).ready(function () {
+    var clients = get_clients()
     $('#searchform').submit(function() {
         search($('#query').val(), $('#catid').val());
         return false;

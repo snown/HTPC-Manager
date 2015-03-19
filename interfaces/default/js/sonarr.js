@@ -2,17 +2,27 @@ $(document).ready(function () {
     moment().format();
     $(window).trigger('hashchange');
     var qlty = profile();
+    var folders = rootfolder();
     loadShows();
     history();
     calendar();
 
-    $('#add_show_button').click(function () {
-        $(this).attr('disabled', true);
-        searchTvDb($('#add_show_name').val());
+    var addShowAction = function () {
+        var query = $('#add_show_name').val();
+        if (query) {
+            $('#add_show_button').attr('disabled', true);
+            searchTvDb(query);
+        }
+    };
+    $('#add_show_name').keyup(function(event){
+        if(event.keyCode == 13){
+            addShowAction();
+        }
     });
+    $('#add_show_button').click(addShowAction);
 
     $('#add_tvdbid_button').click(function () {
-        addShow($('#add_show_select').val(), $('#add_show_quality').val());
+        addShow($('#add_show_select').val(), $('#add_show_quality').val(), $('#add_show_folder').val());
     });
 
     $('#cancel_show_button').click(function () {
@@ -33,9 +43,10 @@ function loadShows() {
         type: 'get',
         dataType: 'json',
         success: function (result) {
+            $('#tvshows_table_body').empty();
             if (result.length === 0) {
                 var row = $('<tr>');
-                row.append($('<td>').html('No shows found'));
+                row.append($('<td>').attr('colspan', '5').html('No shows found'));
                 $('#tvshows_table_body').append(row);
             }
             $.each(result, function (showname, tvshow) { // tvshow.tvdbId
@@ -97,8 +108,9 @@ function sonarrStatusIcon(iconText, white) {
 }
 
 function sonarrStatusLabel(text) {
-    var statusOK = ['continuing', 'downloaded', 'HD', 'HD-720p', 'HD-1080p', 'WEBDL-1080p'];
-    var statusInfo = ['snatched', 'SD'];
+    var statusOK = ['continuing', 'downloaded', 'HD', 'HD-720p', 'HD-1080p', 'HDTV-720p',
+                    'HDTV-1080p', 'WEBDL-720p', 'WEBDL-1080p', 'Bluray', 'Bluray-720p', 'Bluray-1080p'];
+    var statusInfo = ['snatched', 'SD', 'SDTV', 'DVD'];
     var statusError = ['ended'];
     var statusWarning = ['skipped'];
 
@@ -124,6 +136,12 @@ function sonarrStatusLabel(text) {
 function profile(qualityProfileId) {
     $.get(WEBDIR + 'sonarr/Profile', function (result) {
         qlty = result
+    });
+}
+
+function rootfolder() {
+    $.get(WEBDIR + 'sonarr/Rootfolder', function (result) {
+        folders = result;
     });
 }
 
@@ -171,14 +189,19 @@ function searchTvDb(query) {
     $.ajax({
         url: WEBDIR + 'sonarr/Lookup/' + encodeURIComponent(query),
         type: 'get',
+        error: function () {
+            $('#add_show_button').attr('disabled', false);
+        },
         success: function (result) {
             if (result.length === 0) {
                 $('#add_show_button').attr('disabled', false);
                 $('#add_show_quality').attr('disabled', false);
+                $('#add_show_folder').attr('disabled', false);
                 return;
             }
             $('#add_show_select').html('');
             $('#add_show_quality').html('');
+            $('#add_show_folder').html('');
             $.each(result, function (i, item) {
                 var tvdbid = item.tvdbId;
                 var showname = item.title;
@@ -195,25 +218,38 @@ function searchTvDb(query) {
                 option2.html(quality.name);
                 $('#add_show_quality').append(option2);
             });
+            $.each(folders, function (i, folder) {
+                var option2 = $('<option>');
+                option2.attr('value', folder);
+                option2.html(folder);
+                $('#add_show_folder').append(option2);
+            });
             $('#add_show_name').hide();
             $('#cancel_show_button').show();
             $('#add_show_select').fadeIn();
             $('#add_show_button').attr('disabled', false).hide();
             $('#add_tvdbid_button').show();
-            $('#add_show_quality').show();
+            $('#add_show_quality').fadeIn().show();
+            $('#add_show_folder').fadeIn().show();
         }
     });
 }
 
-function addShow(tvdbid, quality) {
+function addShow(tvdbid, quality, rootfolder) {
+    var data = {
+        rootfolder: rootfolder
+    };
+
     $.ajax({
         url: WEBDIR + 'sonarr/AddShow/' + tvdbid + '/' + quality,
+        data: data,
         type: 'get',
         dataType: 'json',
         success: function (data) {
             $.each(data, function (i, res) {
                 if (!res.errorMessage) {
                     notify('Add TV show', data.title, 'success');
+                    loadShows();
                 } else {
                     notify('Failed to add show', res.errorMessage, 'error');
                 }
@@ -226,12 +262,14 @@ function addShow(tvdbid, quality) {
 function cancelAddShow() {
     $('#add_show_name').val('');
     $('#add_show_quality').val('');
+    $('#add_show_folder').val('');
     $('#add_show_select').hide();
     $('#cancel_show_button').hide();
     $('#add_show_name').fadeIn();
     $('#add_tvdbid_button').hide();
     $('#add_show_button').show();
     $('#add_show_quality').hide();
+    $('#add_show_folder').hide();
 }
 
 
@@ -274,6 +312,10 @@ function loadShow(seriesID) {
 
         row = $('<tr>');
         row.append('<th>Network</th><td>' + tvshow.network + '</td>');
+        table.append(row);
+
+        row = $('<tr>');
+        row.append('<th>Summary</th><td>' + tvshow.overview + '</td>');
         table.append(row);
 
         if (tvshow.images.length > 0) {

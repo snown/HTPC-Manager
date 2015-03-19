@@ -3,14 +3,14 @@
 
 import cherrypy
 import htpc
-from htpc.proxy import get_image
 import requests
 from cherrypy.lib.auth2 import require, member_of
 import logging
 import hashlib
+from htpc.helpers import fix_basepath, get_image, striphttp
 
 
-class Couchpotato:
+class Couchpotato(object):
     def __init__(self):
         self.logger = logging.getLogger("modules.couchpotato")
         htpc.MODULES.append({
@@ -38,11 +38,9 @@ class Couchpotato:
     def webinterface(self):
         """ Generate page from template """
         ssl = "s" if htpc.settings.get("couchpotato_ssl", 0) else ""
-        host = htpc.settings.get("couchpotato_host", "")
+        host = striphttp(htpc.settings.get("couchpotato_host", ""))
         port = str(htpc.settings.get("couchpotato_port", ""))
-        basepath = htpc.settings.get("couchpotato_basepath", "/")
-        if not basepath.endswith("/"):
-            basepath += "/"
+        basepath = fix_basepath(htpc.settings.get("couchpotato_basepath", "/"))
 
         url = "http%s://%s:%s%s" % (ssl, host, port, basepath)
 
@@ -53,11 +51,12 @@ class Couchpotato:
     @cherrypy.tools.json_out()
     def ping(self, couchpotato_host, couchpotato_port, couchpotato_apikey, couchpotato_basepath, couchpotato_ssl=False, **kwargs):
         self.logger.debug("Testing connectivity to couchpotato")
-        if not(couchpotato_basepath.endswith("/")):
-            couchpotato_basepath += "/"
+
+        couchpotato_basepath = fix_basepath(couchpotato_basepath)
+        couchpotato_host = striphttp(couchpotato_host)
 
         ssl = "s" if couchpotato_ssl else ""
-        url = "http" + ssl + "://" + couchpotato_host + ":" + couchpotato_port + couchpotato_basepath + "api/" + couchpotato_apikey
+        url = "http%s://%s:%s%sapi/%s" % (ssl, couchpotato_host, couchpotato_port, couchpotato_apikey)
         try:
             f = requests.get(url + '/app.available/', timeout=10)
             return f.json()
@@ -77,11 +76,10 @@ class Couchpotato:
 
         getkey = "getkey/?p=%s&u=%s" % (couchpotato_password, couchpotato_username)
 
-        if not(couchpotato_basepath.endswith("/")):
-            couchpotato_basepath += "/"
+        couchpotato_basepath = fix_basepath(couchpotato_basepath)
 
         ssl = "s" if couchpotato_ssl else ""
-        url = "http%s://%s:%s%s%s" % (ssl, couchpotato_host, couchpotato_port, couchpotato_basepath, getkey)
+        url = "http%s://%s:%s%s%s" % (ssl, striphttp(couchpotato_host), couchpotato_port, couchpotato_basepath, getkey)
         try:
             f = requests.get(url, timeout=10, verify=False)
             return f.json()
@@ -185,16 +183,67 @@ class Couchpotato:
         self.logger.debug("Feching categories")
         return self.fetch('category.list')
 
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def Suggestion(self):
+        self.logger.debug("Fetching suggestion")
+        return self.fetch("suggestion.view")
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def ChartsView(self):
+        self.logger.debug("Fetching charts")
+        return self.fetch("charts.view")
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def SuggestionIgnore(self, imdb=None, seenit=None):
+        u = "suggestion.ignore/?imdb=%s" % imdb
+        if seenit:
+            u += "&seenit=1"
+        self.logger.debug("Fetching suggestion")
+        return self.fetch(u)
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def DashboardSoon(self):
+        return self.fetch("dashboard.soon")
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def Restart(self):
+        return self.fetch("app.restart")
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def Shutdown(self):
+        return self.fetch("app.shutdown")
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def Update(self):
+        return self.fetch("updater.update")
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def SearchAllWanted(self):
+        return self.fetch("movie.searcher.full_search")
+
+    @cherrypy.expose()
+    @cherrypy.tools.json_out()
+    def Postprocess(self, path=''):
+        u = "renamer.scan"
+        if path:
+            u += "/?base_folder=%s" % path
+        return self.fetch(u)
+
     def fetch(self, path):
         try:
-            host = htpc.settings.get("couchpotato_host", "")
+            host = striphttp(htpc.settings.get("couchpotato_host", ""))
             port = str(htpc.settings.get("couchpotato_port", ""))
             apikey = htpc.settings.get("couchpotato_apikey", "")
-            basepath = htpc.settings.get("couchpotato_basepath", "/")
+            basepath = fix_basepath(htpc.settings.get("couchpotato_basepath", "/"))
             ssl = "s" if htpc.settings.get("couchpotato_ssl", 0) else ""
-
-            if not(basepath.endswith("/")):
-                basepath += "/"
 
             url = "http%s://%s:%s%sapi/%s/%s" % (ssl, host, port, basepath, apikey, path)
             self.logger.debug("Fetching information from: " + url)
@@ -207,4 +256,3 @@ class Couchpotato:
             self.logger.debug("Exception: " + str(e))
             self.logger.error("Unable to fetch information")
             return
-

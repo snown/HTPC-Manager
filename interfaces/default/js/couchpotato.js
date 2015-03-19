@@ -1,21 +1,30 @@
-var profiles = $('<select>');
+var profiles = $('<select id="profiles">');
 var cpcat = '';
 $(document).ready(function() {
     $(window).trigger('hashchange')
     getMovieLists()
     getNotificationList()
     getHistory()
+    getSuggestions()
+    getCharts()
+    getDashboardSoon();
+
     $('#searchform').submit(function(e) {
         e.preventDefault()
         var search = $('#moviename').val()
-        if (search) searchMovie(search)
+        if (search) {
+            searchMovie(search)
+        }
+
     })
+
     $.get(WEBDIR + 'couchpotato/GetProfiles', function(data) {
         if (data === null) return
         $.each(data.list, function(i, item) {
             if (!item.hide) profiles.append($('<option>').val(item._id).text(item.label))
-        })
-    })
+        });
+    });
+
     $.get(WEBDIR + 'couchpotato/GetCategories', function(data) {
         if (data.categories.length <= 0) return
         cpcat = $('<select>');
@@ -23,6 +32,17 @@ $(document).ready(function() {
             cpcat.append($('<option>').val(item._id).text(item.label))
         });
     });
+
+    $('#postprocess').click(function(e) {
+        e.preventDefault();
+        Postprocess();
+    });
+
+    $('#cp_update').click(function(e) {
+        e.preventDefault();
+        update();
+    });
+
 });
 
 
@@ -151,7 +171,7 @@ function getHistory() {
         $.each(result.notifications, function(i, item) {
             $('#history-grid').prepend(
                 $('<tr>').append(
-                    $('<td>').text(parseDate(item.added)),
+                    $('<td>').text(parseDate(item.time)),
                     $('<td>').text(item.message)
                 )
             )
@@ -334,5 +354,254 @@ function showMovie(movie, was_search) {
 
     var modalBody = $('<div>').append(modalImg, modalInfo);
     showModal(title, modalBody, modalButtons);
+    // since ff and ie sucks balls
+    $('#profiles option')[0].selected = true
     Holder.run();
+}
+
+
+function getSuggestions() {
+    var suggestion = $("#suggestions-grid").empty()
+    $(".spinner").show();
+
+    $.getJSON(WEBDIR + "couchpotato/Suggestion/", function (data) {
+
+
+
+        if (data === null || data.total === 0) {
+            suggestion.append($("<li>").html("No suggestioned movies found"));
+            return;
+        }
+
+        $.each(data.suggestions, function(i, m) {
+            var strHTML = $("<a>").attr("href", "#").click(function(c) {
+                c.preventDefault();
+                load_sc(m, cpcat);
+            });
+
+            if (m.images.poster && m.images.poster_original) {
+                strHTML.append($("<img>").attr("src", WEBDIR + "couchpotato/GetImage?w=100&h=150&url=" + m.images.poster[0]).attr("width", "100").attr("height", "150").addClass("thumbnail"));
+            }
+
+
+            strHTML.append($("<h6>").addClass("movie-title").html(shortenText(m.original_title, 12)));
+            suggestion.append($("<li>").attr("id", m.id).append(strHTML));
+        });
+    });
+    $(".spinner").hide();
+
+}
+
+function getDashboardSoon() {
+    var suggestion = $("#dashboardsoon-grid").empty()
+    $(".spinner").show();
+    $.getJSON(WEBDIR + "couchpotato/DashboardSoon/", function (data) {
+
+        if (data === null || data.total === 0) {
+            suggestion.append($("<li>").html("No movies available soon"));
+            return;
+        }
+
+        $.each(data.movies, function(i, m) {
+            var strHTML = $("<a>").attr("href", "#").click(function(c) {
+                c.preventDefault();
+                showMovie(m, cpcat)
+            });
+
+            if (m.info.images.poster && m.info.images.poster_original) {
+                strHTML.append($("<img>").attr("src", WEBDIR + "couchpotato/GetImage?w=100&h=150&url=" + m.info.images.poster[0]).attr("width", "100").attr("height", "150").addClass("thumbnail"));
+            }
+
+
+            strHTML.append($("<h6>").addClass("movie-title").html(shortenText(m.info.original_title, 12)));
+            suggestion.append($("<li>").attr("id", m.id).append(strHTML));
+        });
+    });
+    $(".spinner").hide();
+
+}
+
+// Used for suggestion and charts modal
+function load_sc(movie, was_search) {
+    var modalButtons;
+
+
+    var info = movie;
+    var plot = movie.plot;
+    var year = movie.year;
+
+
+var src = 'holder.js/154x231/text:No artwork';
+if (info.images.poster && info.images.poster[0]) {
+    src = WEBDIR + 'couchpotato/GetImage?w=154&h=231&url=' + info.images.poster[0];
+}
+var modalImg = $('<img>').attr('src', src).addClass('thumbnail pull-left');
+
+var modalInfo = $('<div>').addClass('modal-movieinfo');
+if (info.runtime) {
+    modalInfo.append($('<p>').html('<b>Runtime:</b> ' + parseSec(info.runtime)));
+}
+modalInfo.append($('<p>').html('<b>Plot:</b> ' + plot));
+if (info.directors) {
+    modalInfo.append($('<p>').html('<b>Director:</b> ' + info.directors));
+}
+if (info.genres) {
+    modalInfo.append($('<p>').html('<b>Genre:</b> ' + info.genres));
+}
+
+if (info.rating && info.rating.imdb) {
+    modalInfo.append(
+    $('<div>').raty({
+        readOnly: true,
+        path: WEBDIR + 'img',
+        score: (info.rating.imdb[0] / 2)
+    }));
+}
+
+var titles = $('<select>').attr('id', 'titles');
+if (typeof movie.plot === 'undefined') {
+    $.each(info.titles, function (i, item) {
+        titles.append($('<option>').text(item).val(item).prop('selected', item["default"]));
+    });
+} else {
+    $.each(info.titles, function (i, item) {
+        titles.append($('<option>').text(item).val(item));
+    });
+
+}
+
+profiles.unbind();
+var title = info.original_title + ' (' + year + ')';
+profiles.change(function () {
+    editMovie(movie._id, profiles.val(), titles.val());
+}).val(movie.profile_id);
+titles.change(function () {
+    editMovie(movie._id, profiles.val(), titles.val());
+});
+
+var modalBody = $('<div>').append(modalImg, modalInfo);
+
+modalButtons = {
+    'Add': function () {
+        if (!was_search.length) {
+            was_search = ''
+        } else {
+            was_search = was_search.val()
+        }
+        addMovie(movie.imdb, profiles.val(), titles.val(), was_search);
+        hideModal();
+        getMovies("active", $("#wanted-grid"));
+    },
+    'Ignore': function() {
+        $.get(WEBDIR + "couchpotato/SuggestionIgnore/" + info.imdb, function(data) {
+            if (data.result) {
+                notify("Marked",  titles.val() + " as ignored", "sucess")
+                getCharts();
+                getSuggestions();
+                hideModal();
+            } else {
+                notify("Failed", "to mark " + titles.val() + " as ignored", "error")
+                hideModal();
+            }
+        })
+    },
+    'Seen it': function() {
+        $.get(WEBDIR + "couchpotato/SuggestionIgnore/?imdb="+ info.imdb + "&seenit=1", function(data) {
+            if (data.result) {
+                notify("Marked ",  titles.val() + " as seen", "sucess")
+                getCharts();
+                getSuggestions();
+                hideModal();
+            } else {
+                notify("Failed ",  "to mark " + titles.val() + " as seen", "error")
+                hideModal();
+            }
+        })
+    }
+
+};
+
+if (info.imdb) {
+    $.extend(modalButtons, {
+        'IMDb': function () {
+            window.open('http://www.imdb.com/title/' + info.imdb, 'IMDb');
+        }
+    });
+}
+modalInfo.append(titles, profiles);
+modalInfo.append(cpcat);
+
+// kicks off the modal
+showModal(title, modalBody, modalButtons);
+$('#profiles option')[0].selected = true;
+Holder.run();
+
+}
+
+function Postprocess() {
+    var data = {};
+    p = prompt('Write path to processfolder or leave blank for default path');
+    if (p || p.length >= 0) {
+        data.path = p;
+
+        $.get(WEBDIR + 'couchpotato/Postprocess', data, function(r) {
+            state = (r.success) ? 'success' : 'error';
+            // Stop the notify from firing on cancel
+            if (p !== null) {
+                path = (p.length === 0) ? 'Default folder' : p;
+                notify('sickrage', 'Postprocess ' + path, state);
+            }
+        });
+
+    }
+}
+
+function update() {
+    $.get(WEBDIR + "couchpotato/Update/", function(data){
+        if (data.success) {
+            notify("Couchpotato", "is updating", "success")
+        } else {
+            notify("Couchpotato", "is not updating", "error")
+        }
+    })
+}
+
+function getCharts() {
+    $(".spinner").show();
+
+    $.getJSON(WEBDIR + "couchpotato/ChartsView/", function (data) {
+        if (data === null || data.total === 0) {
+            return;
+        }
+
+        // loop each active charts,
+        $.each(data.charts, function(i, chart) {
+            // add to navbar have to use a int as href as the tab thing doesnt like space
+            var a = $('<a>').attr('href', '#t'+ i).attr('data-toggle', 'tab').text(chart.name)
+            var li = $('<li>')
+            li.append(a)
+            // Add li to charts dropdown
+            $(".cp_chart_dropdown").append(li)
+            // Add images etc to this one
+            var grid = $('<ul>').attr('id', chart.name + '-grid').addClass("thumbnails")
+            var make_tab = $('<div>').attr('id', 't' + i ).addClass("tab-pane").append(grid)
+            $('#cp_tab_content').append(make_tab);
+            $.each(chart.list, function(i, m) {
+                var strHTML = $("<a>").attr("href", "#").click(function(c) {
+                    c.preventDefault();
+                    load_sc(m, cpcat);
+                });
+
+                if (m.images.poster && m.images.poster_original) {
+                    strHTML.append($("<img>").attr("src", WEBDIR + "couchpotato/GetImage?w=100&h=150&url=" + m.images.poster[0]).attr("width", "100").attr("height", "150").addClass("thumbnail"));
+                }
+
+
+                strHTML.append($("<h6>").addClass("movie-title").html(shortenText(m.original_title, 12)));
+                grid.append($("<li>").attr("id", m.imdb).append(strHTML));
+            });
+        });
+    });
+    $(".spinner").hide();
+
 }

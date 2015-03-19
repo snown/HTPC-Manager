@@ -119,4 +119,3 @@ class Settings:
     def test(self):
         """ Used for testing stuff """
         return "testing rollback"
-

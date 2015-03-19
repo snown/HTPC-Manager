@@ -1,18 +1,45 @@
-$(document).ready(function () {
-    loadRecentMovies()
-    loadRecentTVshows()
-    loadRecentAlbums()
-    loadRecentMoviesPlex()
-    loadRecentTVshowsPlex()
-    loadRecentAlbumsPlex()
-    loadDownloadHistory()
-    loadNZBGetDownloadHistory()
-    loadWantedMovies()
-    loadNextAired()
-    loadsonarrCalendar()
-    loadNextAiredSickrage()
-    loadsysinfo()
-})
+
+function loadWantedAlbums () {
+    if (!$('#headphones-carousel').length) return
+    $.get(WEBDIR + 'headphones/GetWantedList', function (data) {
+        if (data === null) return
+        $.each(data, function (i, albums) {
+            var src;
+            var itemDiv = $('<div>').addClass('item carousel-item')
+
+            if (i === 0) itemDiv.addClass('active')
+
+            var tt;
+            if (albums.ReleaseDate.length) {
+                // release date should be (yyyy) or empty string
+                tt = ' (' + albums.ReleaseDate.substring(0,4) + ') '
+            } else {
+                    tt = '  '
+            }
+            if (albums.ArtistName === 'None') {
+                // to remove None..
+                albums.ArtistName = ''
+            }
+            if (albums.ArtworkURL === null) {
+                src = WEBDIR + 'img/no-cover-art.png'
+            } else {
+               src = WEBDIR + 'headphones/GetThumb?h=240&w=430&thumb=' + albums.ArtworkURL
+            }
+
+            itemDiv.attr('style', 'background-image: url("' + src + '")')
+
+            itemDiv.append($('<div>').addClass('carousel-caption').click(function() {
+                location.href = WEBDIR +'headphones/#wanted'
+            }).append(
+                $('<h4>').html(albums.AlbumTitle + tt)
+            ))
+            $('#headphones-carousel .carousel-inner').append(itemDiv)
+
+
+        })
+        $('#headphones-carousel').show()
+    })
+}
 
 function loadRecentMovies () {
     if (!$('#movie-carousel').length) return
@@ -248,7 +275,7 @@ function loadWantedMovies() {
     })
 }
 function loadNextAired(options) {
-    if (!$('#nextaired_sickebeard_table_body').length) return
+    if (!$('#nextaired_sickbeard_table_body').length) return
     $.getJSON(WEBDIR + 'sickbeard/GetNextAired', function (result) {
         if (result === null || result.data.soon.length === 0) {
             $('#nextaired_sickbeard_table_body').append(
@@ -297,31 +324,41 @@ function loadsonarrCalendar(options) {
 }
 
 function loadNextAiredSickrage(options) {
-    if (!$('#nextairedsickrage_table_body').length) return
+    if (!$('#nextaired_sickrage_table_body').length) return
     $.getJSON(WEBDIR + 'sickrage/GetNextAired', function (result) {
-        if (result === null || result.data.soon.length === 0) {
+        if (result === null) {
             $('#nextairedsickrage_table_body').append(
-                $('<tr>').append($('<td>').html('No future episodes found')),
+                $('<tr>').append($('<td>').html('No connection with sickrage')),
                 $('<tr>').append($('<td>').html('&nbsp;')),
                 $('<tr>').append($('<td>').html('&nbsp;')),
                 $('<tr>').append($('<td>').html('&nbsp;')),
                 $('<tr>').append($('<td>').html('&nbsp;'))
             )
-            return
-        }
-        var soonaired = result.data.soon
-        var todayaired = result.data.today
-        var nextaired = todayaired.concat(soonaired)
-        $.each(nextaired, function (i, tvshow) {
-            if (i >= 5) return
-            var name = $('<a>').attr('href', 'sickbeard/view/' + tvshow.tvdbid).html(tvshow.show_name)
+            return false
+        };
+        if (result.data.soon.length === 0 && result.data.later.length === 0 && result.data.today.length === 0 && result.data.missed.length === 0) {
             $('#nextairedsickrage_table_body').append(
+                $('<tr>').append($('<td>').html('No future/missing episodes found')),
+                $('<tr>').append($('<td>').html('&nbsp;')),
+                $('<tr>').append($('<td>').html('&nbsp;')),
+                $('<tr>').append($('<td>').html('&nbsp;')),
+                $('<tr>').append($('<td>').html('&nbsp;'))
+            )
+            return false
+        }
+        var missed = result.data.missed;
+        var all = missed.concat(result.data.today, result.data.soon, result.data.later)
+        $.each(all, function(i, tvshow) {
+            if ($('table #nextaired_sickrage_table_body >tr').length >= 5) return false;
+            var name = $('<a>').attr('href', 'sickrage/view/' + tvshow.tvdbid).html(tvshow.show_name)
+            $('#nextaired_sickrage_table_body').append(
                 $('<tr>').append(
                     $('<td>').append(name),
                     $('<td>').html(tvshow.ep_name),
                     $('<td>').html(tvshow.airdate)
                 )
             )
+
         })
     })
 }
@@ -354,6 +391,7 @@ function loadsysinfo(options) {
 
         return dashspeed;
     });
+
     $.getJSON(WEBDIR + 'stats/sysinfodash', function(result) {
             // feed the bastard
             $(".dash_sysinfo_cpu_idle").text('I '+ result.cpu.idle + ' %');
@@ -391,6 +429,68 @@ function loadsysinfo(options) {
     );
 }
 
+    function loaddiskinfo() {
+        $.ajax({
+            'url': WEBDIR + 'stats/disk_usage',
+                'dataType': 'json' ,
+                'success': function (response) {
+                $('#dash_disks_table_body').html("");
+
+                $.each(response, function (i, disk) {
+                    var row = $('<tr>');
+                    var progress =     "<div class='progress' style=margin-bottom:0px><div class=bar style=width:" + disk.percent + "%><span class=sr-only>"+ getReadableFileSizeStringHDD(disk.used) +"</span></div><div class='bar bar-success' style=width:" + (100 - disk.percent) + "% ><span class=sr-only>" + getReadableFileSizeStringHDD(disk.free) +"</span></div>";
+
+                    row.append(
+                    $('<td>').addClass('stats_disk_mountpoint').text(disk.mountpoint),
+                    $('<td>').addClass('stats_disk_progress span4').html(progress),
+                    $('<td>').addClass('stats_disk_percent').text(disk.percent + '%'));
+                    $('#dash_disks_table_body').append(row);
+            });
+
+            }
+        });
+    }
+
+function loadsmartinfo() {
+    $('.smart-spinner').show();
+    $('#dash_smart_table_body').html("");
+    $.ajax({
+        'url': WEBDIR + 'stats/smart_info',
+            'dataType': 'json' ,
+            'success': function (response) {
+            if (response == null || response.length == 0 || jQuery.isEmptyObject(response)) {
+                    var row = $('<tr>');
+                    row.append($('<td>').text("S.M.A.R.T not correctly configured."));
+                    $('#dash_smart_table_body').append(row);
+            } else {
+                byteSizeOrdering()
+                $.each(response, function (i, drives) {
+                    var row = $('<tr>');
+                    row.append(
+                    $('<td>').text(drives.name),
+                    $('<td>').addClass('span4').text(drives.model),
+                    $('<td>').text(drives.temperature + String.fromCharCode(176)),
+                    $('<td>').text(drives.assessment));
+                    $('#dash_smart_table_body').append(row);
+                });
+            }
+            $('.smart-spinner').hide();
+        }
+    });
+}
+
+
+// For hdd. Converts bytes to filesize in kb,mb,gb
+ function getReadableFileSizeStringHDD(fileSizeInBytes) {
+    var i = -1;
+    var byteUnits = [' kB', ' MB', ' GB', ' TB', 'PB'];
+    do {
+        fileSizeInBytes = fileSizeInBytes / 1000;
+        i++;
+    } while (fileSizeInBytes > 1000);
+    return fileSizeInBytes.toFixed(1) + byteUnits[i];
+};
+
 //
 function bytestospeed(bytes) {
     var i = -1;
@@ -401,3 +501,23 @@ function bytestospeed(bytes) {
     } while (bytes > 1024);
     return bytes.toFixed(2) + byteUnits[i]+ '\\s';
 }
+
+
+$(document).ready(function () {
+    loadRecentMovies()
+    loadRecentTVshows()
+    loadRecentAlbums()
+    loadRecentMoviesPlex()
+    loadRecentTVshowsPlex()
+    loadRecentAlbumsPlex()
+    loadDownloadHistory()
+    loadNZBGetDownloadHistory()
+    loadWantedMovies()
+    loadNextAired()
+    loadsonarrCalendar()
+    loadNextAiredSickrage()
+    loadsysinfo()
+    loadWantedAlbums()
+    loaddiskinfo()
+    loadsmartinfo()
+})

@@ -25,15 +25,16 @@ class Vnstat(object):
         self.version_ = None
         self.logger = logging.getLogger("modules.vnstat")
         htpc.MODULES.append({
-            "name": "Bandwidth",
+            "name": "vnStat",
             "id": "vnstat",
             "fields": [
                 {"type": "bool", "label": "Enable", "name": "vnstat_enable"},
                 {"type": "text", "label": "Menu name", "name": "vnstat_name"},
-                {"type": "bool", "label": "Use SSH?", 'desc': 'Used if vnstat is running on a different computer', "name": "vnstat_use_ssh"},
+                {"type": "bool", "label": "Use SSH?", 'desc': 'Check this if vnstat is running on a different computer', "name": "vnstat_use_ssh"},
                 {"type": "text", "label": "Vnstat DB location", "placeholder": "", "name": "vnstat_db"},
+                {"type": "text", "label": "Interface", "placeholder": "eth0", "desc": "Fetching speed from this interface", "name": "vnstat_interface"},
                 {"type": "text", "label": "IP / Host", "placeholder": "localhost", "name": "vnstat_host"},
-                {"type": "text", "label": "port", "name": "vnstat_port"},
+                {"type": "text", "label": "Port", "name": "vnstat_port"},
                 {"type": "text", "label": "Username", "name": "vnstat_username"},
                 {"type": "password", "label": "Password", "name": "vnstat_password"},
 
@@ -71,7 +72,7 @@ class Vnstat(object):
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 client.connect(hostname, username=username, password=password,
-                                allow_agent=False, look_for_keys=False, timeout=10)
+                               allow_agent=False, look_for_keys=False, timeout=10)
 
                 stdin, stdout, stderr = client.exec_command(cmd)
                 data_out = stdout.read()
@@ -125,17 +126,17 @@ class Vnstat(object):
         vnstat = self.run('--oneline') # with --xml is returns shit
         l = vnstat.replace('\n', '').split(';')
         d = {"rxtoday": l[3],
-            "txtoday": l[4],
-            "totaltoday": l[5],
-            "average_download_today": l[6],
-            "timestamp_current_month": l[7],
-            "rx_current_month": l[8],
-            "tx_current_month": l[9],
-            "total_current_month": l[10],
-            "average_upload_today": l[11],
-            "alltime_total_rx": l[12],
-            "alltime_total_tx": l[13],
-            "alltime_total_traffic": l[14]
+             "txtoday": l[4],
+             "totaltoday": l[5],
+             "average_download_today": l[6],
+             "timestamp_current_month": l[7],
+             "rx_current_month": l[8],
+             "tx_current_month": l[9],
+             "total_current_month": l[10],
+             "average_upload_today": l[11],
+             "alltime_total_rx": l[12],
+             "alltime_total_tx": l[13],
+             "alltime_total_traffic": l[14]
 
         }
         # combine dicts
@@ -157,7 +158,11 @@ class Vnstat(object):
     @cherrypy.expose()
     @require()
     def tr(self, dash=False):
-        piped = self.run('-tr')
+        interface = htpc.settings.get('vnstat_interface', '')
+        if interface:
+            piped = self.run('-tr -i %s' % interface)
+        else:
+            piped = self.run('-tr')
         download = re.compile(ur'rx\s+(\d+.\d+)\s+(\w+\/s)')
         upload = re.compile(ur'tx\s+(\d+.\d+)\s+(\w+\/s)')
         rx = re.search(download, piped)

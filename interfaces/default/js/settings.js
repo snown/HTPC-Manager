@@ -89,14 +89,11 @@ $(document).ready(function () {
         });
         $.post(action, data, function (data) {
             msg = data ? 'Save successful' : 'Save failed';
-            notify('Settings', msg, 'info');
             if ($('#kodi_server_id').is(":visible")) {
                 kodi_update_servers(0);
-                this.reset();
             }
             if ($('#users_user_id').is(":visible")) {
                 users_update_user(0);
-                this.reset();
             }
             if ($('#plex_name').is(":visible")) {
                 $.post(WEBDIR + 'plex/myPlexSignin', '', function (data) {
@@ -106,8 +103,12 @@ $(document).ready(function () {
             }
 
         }).done(function () {
-            // Force reload without cache
-                window.location.reload(true);
+                notify('Settings', msg, 'info');
+                // Force reload without cache
+                setTimeout(function () {
+                    window.location.reload(true);
+                }, 1000);
+
             });
     });
 
@@ -136,6 +137,7 @@ $(document).ready(function () {
             $('#kodi_server_username').val(data.username);
             $('#kodi_server_password').val(data.password);
             $('#kodi_server_mac').val(data.mac);
+			$('#kodi_server_starterport').val(data.starterport);
             $("button:reset:visible").html('Delete').addClass('btn-danger').click(function (e) {
                 var name = item.find('option:selected').text();
                 if (!confirm('Delete ' + name)) return;
@@ -250,9 +252,9 @@ function get_branches() {
             branches.append(option);
         });
         branches.append($('<option>').text(data.branch).val(data.branch).attr('selected', 'selected'));
-        if (!data.verified) {
-            notify('Warning', 'Couldnt determine branch, select correct and save', 'warning');
-        }
+        //if (!data.verified) {
+            //notify('Warning', 'Couldnt determine branch, select correct and save', 'warning');
+        //}
 
     }, 'json');
 }
