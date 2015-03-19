@@ -26,7 +26,8 @@ class TVHeadend(object):
                 {'type': 'text', 'label': 'Port *', 'name': 'tvheadend_port'},
                 {'type': 'text', 'label': 'Username', 'name': 'tvheadend_username'},
                 {'type': 'password', 'label': 'Password', 'name': 'tvheadend_password'}
-        ]})
+            ]
+        })
 
     @cherrypy.expose()
     @require()
@@ -36,8 +37,8 @@ class TVHeadend(object):
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def GetEPG(self, strLimit="300", strChannel=""):
-        return self.fetch("epg", {'limit': strLimit, 'start': "0", 'channel': strChannel})
+    def GetEPG(self, strLimit = "300", strChannel = ""):
+        return self.fetch("epg", { 'limit': strLimit, 'start': "0", 'channel': strChannel })
 
     @cherrypy.expose()
     @require()
@@ -58,6 +59,7 @@ class TVHeadend(object):
         return self.fetch("dvr", {'eventId': strEventID, 'op': "recordEvent"})
 
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def DVRDel(self, strEntryID = ""):
         return self.fetch("dvr", {'entryId': strEntryID, 'op': "cancelEntry"})

@@ -6,7 +6,8 @@ import cherrypy
 import jsonrpclib
 import logging
 from ts import norbits
-from ts import fenopy
+from ts import yts
+from ts import ka
 from cherrypy.lib.auth2 import require, member_of
 
 
@@ -14,18 +15,18 @@ class Torrentsearch(object):
     def __init__(self):
         self.logger = logging.getLogger('modules.torrentsearch')
         htpc.MODULES.append({
-            'name': 'Torrentsearch',
+            'name': 'Torrent Search',
             'id': 'torrentsearch',
             'fields': [
                 {'type': 'bool', 'label': 'Enable', 'name': 'torrentsearch_enable'},
                 {'type': 'text', 'label': 'Menu name', 'name': 'torrentsearch_name'},
                 {'type': 'bool', 'label': 'Enable BTN', 'name': 'torrents_btn_enabled'},
                 {'type': 'text', 'label': 'BTN apikey', 'name': 'torrentsearch_btn_apikey'},
-                {'type': 'bool', 'label': 'Fenopy', 'name': 'torrents_fenopy_enabled'},
-                {'type': 'bool', 'label': 'Fenopy verified torrents only', 'name': 'torrents_fenopy_enabled_verified'},
                 {'type': 'bool', 'label': 'Norbits', 'name': 'torrents_norbits_enabled'},
                 {'type': 'text', 'label': 'Norbits username', 'name': 'torrents_norbits_username'},
-                {'type': 'text', 'label': 'Norbits passkey', 'name': 'torrents_norbits_passkey'}
+                {'type': 'text', 'label': 'Norbits passkey', 'name': 'torrents_norbits_passkey'},
+                {'type': 'bool', 'label': 'YTS', 'name': 'torrents_yts_enabled'},
+                {'type': 'bool', 'label': 'KAT', 'name': 'torrents_ka_enabled'},
             ]
         })
 
@@ -39,46 +40,63 @@ class Torrentsearch(object):
     @require()
     @cherrypy.tools.json_out()
     def search(self, query=None):
+        self.logger.debug(query)
         r = []
         if htpc.settings.get('torrents_btn_enabled'):
             r += self.btn(query)
-        elif htpc.settings.get('torrents_fenopy_enabled'):
-            r += self.search_fenopy(query, 'all')
-        elif htpc.settings.get('torrents_norbits_enabled'):
-            r += self.search_norbits(query, 'tv')
+        if htpc.settings.get('torrents_norbits_enabled'):
+            r += self.search_norbits(query, 'all')
+        if htpc.settings.get('torrents_yts_enabled'):
+            r += self.search_yts(query)
+        if htpc.settings.get('torrents_ka_enabled'):
+            r += self.search_ka(query)
         return r
 
     def btn(self, query=None):
-        btn = jsonrpclib.Server('http://api.btnapps.net')
-        result = btn.getTorrents(htpc.settings.get('torrentsearch_btn_apikey', ''), query, 999)
+        result = None
+        try:
+            btn = jsonrpclib.Server('http://api.btnapps.net')
+            result = btn.getTorrents(htpc.settings.get('torrentsearch_btn_apikey', ''), query, 999)
+        except Exception as e:
+            self.logger.error("Failed to fetch search results from BTN %s" % e)
+            return []
+
         search_results = []
 
         try:
-            if 'torrents' in result:
-                for k, v in result['torrents'].iteritems():
-                    v["BrowseURL"] = 'https://broadcasthe.net/torrents.php?id=%s&torrentid=%s' % (v['GroupID'], v['TorrentID'])
-                    v["Provider"] = "btn"
-                    search_results.append(v)
-                return search_results
+            if result:
+                if 'torrents' in result:
+                    for k, v in result['torrents'].iteritems():
+                        v["BrowseURL"] = 'https://broadcasthe.net/torrents.php?id=%s&torrentid=%s' % (v['GroupID'], v['TorrentID'])
+                        v["Provider"] = "btn"
+                        search_results.append(v)
+                    return search_results
+                else:
+                    return search_results
             else:
                 return search_results
         except Exception as e:
             self.logger.error("Failed to fetch search results from BTN %s" % e)
+            return []
 
     def torrentproviders(self):
         torrentproviders = ['ALL']
         if htpc.settings.get('torrents_btnapikey') and htpc.settings.get('torrents_btn_enabled') == 1:
             torrentproviders.append('BTN')
 
-        if htpc.settings.get('torrents_fenopy_enabled') == 1:
-            torrentproviders.append('fenopy')
-
         if htpc.settings.get('torrents_norbits_enabled') == 1 and htpc.settings.get('torrents_norbits_passkey') and htpc.settings.get('torrents_norbits_username'):
             torrentproviders.append('norbits')
+
+        if htpc.settings.get('torrents_yts_enabled') == 1:
+            torrentproviders.append('yts')
+
+        if htpc.settings.get('torrents_ka_enabled') == 1:
+            torrentproviders.append('ka')
 
         return torrentproviders
 
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def getclients(self):
         l = []
@@ -128,10 +146,12 @@ class Torrentsearch(object):
             l.append(utor)
         return l
 
-    def search_fenopy(self, q, cat):
-        results = fenopy.search(q, cat)
-        return results
-
     def search_norbits(self, q, cat):
         results = norbits.search(q, cat)
         return results
+
+    def search_yts(self, q, cat=None):
+        return yts.YTS().search(q, cat)
+
+    def search_ka(self, q, cat="all"):
+        return ka.search(q, cat)

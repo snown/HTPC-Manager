@@ -8,9 +8,10 @@ import urllib
 import json
 import logging
 from cherrypy.lib.auth2 import require
+from htpc.helpers import striphttp
 
 
-class Qbittorrent:
+class Qbittorrent(object):
     def __init__(self):
         self.logger = logging.getLogger("modules.qbittorrent")
         htpc.MODULES.append({
@@ -34,7 +35,7 @@ class Qbittorrent:
         return htpc.LOOKUP.get_template("qbittorrent.html").render(scriptname="qbittorrent", webinterface=self.webinterface())
 
     def webinterface(self):
-        host = htpc.settings.get("qbittorrent_host", "")
+        host = striphttp(htpc.settings.get("qbittorrent_host", ""))
         port = htpc.settings.get("qbittorrent_port", "")
         ssl = "s" if htpc.settings.get("qbittorret_ssl", 0) else ""
         url = "http%s://%s:%s/" % (ssl, host, port)
@@ -44,8 +45,8 @@ class Qbittorrent:
     @cherrypy.expose()
     @require()
     def qbturl(self):
-        if htpc.settings.get('qbittorrent_enable'):
-            host = htpc.settings.get("qbittorrent_host", "")
+        if htpc.settings.get('qbittorrent_enable'):            
+            host = striphttp(htpc.settings.get("qbittorrent_host", ""))
             port = htpc.settings.get("qbittorrent_port", "")
             username = htpc.settings.get("qbittorrent_username", "")
             password = htpc.settings.get("qbittorrent_password", "")
@@ -168,6 +169,7 @@ class Qbittorrent:
 
     #Torrent search send to torrent
     @cherrypy.expose()
+    @require()
     def to_client(self, link, torrentname, **kwargs):
         try:
             url = self.qbturl()

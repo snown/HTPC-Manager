@@ -25,7 +25,7 @@ class Users(object):
                  'label': 'User',
                  'name': 'users_user_id',
                  'options': [
-                        {'name': 'New', 'value':0}
+                    {'name': 'New', 'value': 0}
                     ]
                 },
                 {'type': 'text',

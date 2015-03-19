@@ -24,6 +24,11 @@ LOGGER = None
 LOGLEVEL = None
 settings = None
 ENABLESSL = False
+UPDATE_AVAIL = False
+COMMITS_BEHIND = None
+CURRENT_HASH = None
+LATEST_HASH = None
 role_admin = ["admin"]
 role_user = ["admin", "user"]
 role_restriced = ["restricted_user"]
+

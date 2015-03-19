@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import requests
 from cherrypy.lib.auth2 import require, member_of
+
+
+import requests
+from cherrypy.lib.auth2 import require
 import logging
 import htpc
 import cherrypy
 from HTMLParser import HTMLParser
+from htpc.helpers import striphttp
 
 logger = logging.getLogger('modules.utorrent')
 
@@ -95,17 +99,18 @@ class UTorrent(object):
 
     def __init__(self):
         htpc.MODULES.append({
-        'name': 'uTorrent',
-        'id': 'utorrent',
-        'test': htpc.WEBDIR + 'utorrent/ping',
-        'fields': [
-            {'type': 'bool', 'label': 'Enable', 'name': 'utorrent_enable'},
-            {'type': 'text', 'label': 'Menu name', 'name': 'utorrent_name'},
-            {'type': 'text', 'label': 'IP / Host *', 'name': 'utorrent_host'},
-            {'type': 'text', 'label': 'Port', 'placeholder':'8080', 'name': 'utorrent_port'},
-            {'type': 'text', 'label': 'Username', 'name': 'utorrent_username'},
-            {'type': 'password', 'label': 'Password', 'name': 'utorrent_password'}
-        ]})
+            'name': 'uTorrent',
+            'id': 'utorrent',
+            'test': htpc.WEBDIR + 'utorrent/ping',
+            'fields': [
+                {'type': 'bool', 'label': 'Enable', 'name': 'utorrent_enable'},
+                {'type': 'text', 'label': 'Menu name', 'name': 'utorrent_name'},
+                {'type': 'text', 'label': 'IP / Host *', 'name': 'utorrent_host'},
+                {'type': 'text', 'label': 'Port', 'placeholder': '8080', 'name': 'utorrent_port'},
+                {'type': 'text', 'label': 'Username', 'name': 'utorrent_username'},
+                {'type': 'password', 'label': 'Password', 'name': 'utorrent_password'}
+            ]
+        })
 
     @cherrypy.expose()
     @require()
@@ -202,7 +207,7 @@ class UTorrent(object):
         u_host = host or htpc.settings.get('utorrent_host')
         u_port = port or htpc.settings.get('utorrent_port')
 
-        return 'http://{}:{}/gui/'.format(u_host, u_port)
+        return 'http://{}:{}/gui/'.format(striphttp(u_host), u_port)
 
     def auth(self, host, port, username, pwd):
         token_page = requests.get(self._get_url(host, port) + 'token.html', auth=(username, pwd))

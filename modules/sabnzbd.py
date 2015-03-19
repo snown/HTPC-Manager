@@ -8,6 +8,7 @@ from urllib2 import urlopen
 from json import loads
 import logging
 from cherrypy.lib.auth2 import require, member_of
+from htpc.helpers import fix_basepath, striphttp
 
 
 class Sabnzbd(object):
@@ -40,12 +41,12 @@ class Sabnzbd(object):
         self.logger.debug("Fetching version information from sabnzbd")
         ssl = "s" if sabnzbd_ssl else ""
 
-        if(sabnzbd_basepath == ""):
+        if not sabnzbd_basepath:
             sabnzbd_basepath = "/sabnzbd/"
-        if not(sabnzbd_basepath.endswith("/")):
-            sabnzbd_basepath += "/"
 
-        url = "http" + ssl + "://" + sabnzbd_host + ":" + sabnzbd_port + sabnzbd_basepath + "api?output=json&apikey=" + sabnzbd_apikey
+        sabnzbd_basepath = fix_basepath(sabnzbd_basepath)
+        url = "http%s://%s:%s%sapi?output=json&apikey=%s" % (ssl, striphttp(sabnzbd_host), sabnzbd_port, sabnzbd_basepath, sabnzbd_apikey)
+
         try:
             return loads(urlopen(url + "&mode=version", timeout=10).read())
         except:
@@ -53,17 +54,13 @@ class Sabnzbd(object):
             return
 
     def webinterface(self):
-        host = htpc.settings.get("sabnzbd_host", "")
+        host = striphttp(htpc.settings.get("sabnzbd_host", ""))
         port = str(htpc.settings.get("sabnzbd_port", ""))
         sabnzbd_basepath = htpc.settings.get("sabnzbd_basepath", "/sabnzbd/")
         ssl = "s" if htpc.settings.get("sabnzbd_ssl", 0) else ""
-        if not sabnzbd_basepath:
-            sabnzbd_basepath = "/sabnzbd/"
-        if not sabnzbd_basepath.endswith("/"):
-            sabnzbd_basepath += "/"
-        # In case a user forgets to add a /
-        if sabnzbd_basepath and not sabnzbd_basepath.startswith("/"):
-            sabnzbd_basepath = "/" + sabnzbd_basepath
+
+        sabnzbd_basepath = fix_basepath(sabnzbd_basepath)
+
         url = "http%s://%s:%s%s" % (ssl, host, port, sabnzbd_basepath)
         return url
 
@@ -155,20 +152,15 @@ class Sabnzbd(object):
 
     def fetch(self, path):
         try:
-            host = htpc.settings.get("sabnzbd_host", "")
+            host = striphttp(htpc.settings.get("sabnzbd_host", ""))
             port = str(htpc.settings.get("sabnzbd_port", ""))
             apikey = htpc.settings.get("sabnzbd_apikey", "")
-            sabnzbd_basepath = htpc.settings.get("sabnzbd_basepath", "/sabnzbd/")
+            sabnzbd_basepath = fix_basepath(htpc.settings.get("sabnzbd_basepath", "/sabnzbd/"))
             ssl = "s" if htpc.settings.get("sabnzbd_ssl", 0) else ""
 
-            if sabnzbd_basepath:
-                sabnzbd_basepath = "/sabnzbd/"
-            if not sabnzbd_basepath.endswith("/"):
-                sabnzbd_basepath += "/"
-
-            url = "http" + ssl + "://" + host + ":" + port + sabnzbd_basepath + "api?output=json&apikey=" + apikey + path
+            url = "http%s://%s:%s%sapi?output=json&apikey=%s%s" % (ssl, host, port, sabnzbd_basepath, apikey, path)
             self.logger.debug("Fetching information from: " + url)
-            return loads(urlopen(url, timeout=10).read())
+            return loads(urlopen(url, timeout=10).read(), strict=False)
         except Exception as e:
             self.logger.error("Cannot contact sabnzbd %s" % e)
             return

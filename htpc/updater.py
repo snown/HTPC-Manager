@@ -26,8 +26,8 @@ import logging
 import tarfile
 import shutil
 import platform
+from apscheduler.triggers.interval import IntervalTrigger
 from cherrypy.lib.auth2 import require, member_of
-
 from htpc.root import do_restart
 
 # configure git repo
@@ -35,13 +35,15 @@ gitUser = 'Hellowlol'
 gitRepo = 'HTPC-Manager'
 
 
-class Updater:
+class Updater(object):
     """ Main class """
     def __init__(self):
         self.logger = logging.getLogger('htpc.updater')
         self.updateEngineName = 'Unknown'
         # Set update engine. Use git updater or update from source.
         self.updateEngine = self.getEngine()
+        # Check for updates automatically
+        htpc.SCHED.add_job(self.update_needed, trigger=IntervalTrigger(hours=6))
 
     """ Determine the update method """
     def getEngine(self):
@@ -70,9 +72,8 @@ class Updater:
         if platform.system().lower() == 'windows':
             if gp != gp.lower():
                 alternative_gp.append(gp.lower())
-            # Disbled this so it uses source updater while testing.
-            #alternative_gp += ["%USERPROFILE%\AppData\Local\GitHub\PORTAB~1\bin\git.exe", "c:\Program Files (x86)\Git\bin\git.exe"]
-
+            # Comment out the line beflow to test the source updater
+            # alternative_gp += ["%USERPROFILE%\AppData\Local\GitHub\PORTAB~1\bin\git.exe", "C:\Program Files (x86)\Git\bin\git.exe"]
         # Returns a empty string if failed
         output = GitUpdater().git_exec(gp, 'version')
 
@@ -82,7 +83,7 @@ class Updater:
             htpc.settings.set('git_path', gp)
             return True
 
-        if alternative_gp:
+        if alternative_gp and not output:
             self.logger.debug("Checking for alternate git location")
             for current_gp in alternative_gp:
                 self.logger.debug("Testing git path %s" % current_gp)
@@ -111,6 +112,12 @@ class Updater:
             return self.check_update()
 
     @cherrypy.expose()
+    @cherrypy.tools.json_out()    
+    @require(member_of(htpc.role_admin))
+    def updatenow(self):
+        Thread(target=self.updateEngine.update).start()
+
+    @cherrypy.expose()
     @cherrypy.tools.json_out()
     @require(member_of(htpc.role_admin))
     def status(self):
@@ -133,32 +140,40 @@ class Updater:
         self.logger.info("Checking for updates from %s." % self.updateEngineName)
 
         # Get current and latest version
+        # current can return True, False, Unknown, and SHA
         current = self.updateEngine.current()
+        htpc.CURRENT_HASH = current
+        # Can return True, False
         latest = self.updateEngine.latest()
+        htpc.LATEST_HASH = latest
+        self.logger.debug("Latest commit is %s" % latest)
+        self.logger.debug("Current commit is %s" % current)
 
-        if not latest:
+        if latest is False:
             self.logger.error("Failed to determine the latest version for HTPC Manager.")
         else:
             output['latestVersion'] = latest
 
-        if not current:
+        if current is False:
             self.logger.error("Failed to determine the current version for HTPC Manager.")
         else:
             output['currentVersion'] = current
 
         # If current or latest failed, updating is not possible
-        if not current or not latest:
+        if current is False or latest is False:
             self.logger.debug("Cancel update.")
             output['updateNeeded'] = False
             return output
 
         # If HTPC Manager is up to date, updating is not needed
-        if current == latest:
+        if current == latest and current != "Unknown":
             self.logger.info("HTPC-Manager is Up-To-Date.")
             output['versionsBehind'] = 0
+            htpc.COMMITS_BEHIND = 0
             output['updateNeeded'] = False
         else:
             behind = self.behind_by(current, latest)
+            htpc.COMMITS_BEHIND = behind
             output['versionsBehind'] = behind
 
         self.logger.info("Currently " + str(output['versionsBehind']) + " commits behind.")
@@ -184,13 +199,28 @@ class Updater:
     def branches(self):
         return self.updateEngine.branches()
 
+    def update_needed(self):
+        self.logger.info("Running update_needed")
+        update_avail = self.check_update()
+        # returns true or false
+        if update_avail.get("updateNeeded"):
+            if htpc.settings.get('app_check_for_updates', False):
+                self.logger.debug("Add update footer")
+                # Used for the notification footer
+                htpc.UPDATE_AVAIL = True
+        else:
+            htpc.UPDATE_AVAIL = False
+        # Since im stupid, protect me please.. srsly its for myself.
+        if htpc.UPDATE_AVAIL and htpc.settings.get("app_auto_update", False) and not htpc.DEBUG:
+            self.logger.debug("Auto updating now!")
+            Thread(target=self.updateEngine.update).start()
+
 
 class GitUpdater():
     """ Class to update HTPC Manager using git commands. """
     def __init__(self):
         """ Set GitHub settings on load """
         self.UPDATING = 0
-
         self.git = htpc.settings.get('git_path', 'git')
         self.logger = logging.getLogger('htpc.updater')
         #self.update_remote_origin() # Disable this since it a fork for now.
@@ -274,7 +304,7 @@ class GitUpdater():
                 # Note to self rtfm before you run git commands, just wiped the data dir...
                 # This command removes all untracked files and files and the files in .gitignore
                 # except from the content of htpc.DATADIR and VERSION.txt
-                self.git_exec(self.git, 'clean -d -fx -e %s -e VERSION.txt' % htpc.DATADIR)
+                self.git_exec(self.git, 'clean -d -fx -e %s -e VERSION.txt -e userdata/' % htpc.DATADIR)
             self.logger.warning('Restarting HTPC Manager after update.')
             # Restart HTPC Manager to make sure all new code is loaded
             do_restart()
@@ -287,19 +317,24 @@ class GitUpdater():
             proc = subprocess.Popen(gp + " " + args, stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT, shell=True, cwd=htpc.RUNDIR)
             output, err = proc.communicate()
+            exitcode = proc.returncode
 
             self.logger.debug("Running %s %s" % (gp, args))
         except OSError, e:
             self.logger.warning(str(e))
             return ''
 
+        if exitcode > 0:
+            self.logger.warning('%s -  %s' % (output, err))
+            return ''
+
         if err:
             self.logger.warning(output + ' - ' + err)
             return ''
-        elif any(s in output for s in ['not found', 'not recognized', 'fatal:']):
+        if any(s in output for s in ['not found', 'not recognized', 'fatal:']):
             self.logger.warning(output)
             return ''
-        else:
+        if output and exitcode == 0:
             return output.strip()
 
 
@@ -307,16 +342,12 @@ class SourceUpdater():
     """ Class to update HTPC Manager using Source code from Github. Requires a full download on every update."""
     def __init__(self):
         self.UPDATING = 0
-
         self.currentHash = False
         self.verified = False
-
         self.logger = logging.getLogger('htpc.updater')
-
         self.versionFile = os.path.join(htpc.RUNDIR, 'VERSION.txt')
         self.updateFile = os.path.join(htpc.DATADIR, 'htpc-manager-update.tar.gz')
         self.updateDir = os.path.join(htpc.DATADIR, 'update-source')
-
 
     def current(self):
         """ Get hash of current runnig version """
@@ -367,8 +398,8 @@ class SourceUpdater():
              and matching that against all branches on github """
 
         versionfile = self.current()
-        #current_branch = htpc.settings.get('branch', 'master2')
-        current_branch = htpc.settings.get('branch', 'Unknown')
+        current_branch = htpc.settings.get('branch', 'master2')
+        #current_branch = htpc.settings.get('branch', 'Unknown')
         # should return sha on success not True False
         if not isinstance(self.current(), bool):
             try:
@@ -412,7 +443,6 @@ class SourceUpdater():
         self.logger.info("Attempting update from source.")
 
         self.UPDATING = 1
-        cherrypy.engine.exit()
 
         tarUrl = 'https://github.com/%s/%s/tarball/%s' % (gitUser, gitRepo, htpc.settings.get('branch', 'master2'))
 

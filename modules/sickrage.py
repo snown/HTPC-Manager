@@ -8,6 +8,7 @@ from urllib2 import urlopen
 from json import loads
 import logging
 from cherrypy.lib.auth2 import require, member_of
+from htpc.helpers import fix_basepath, get_image, striphttp
 
 
 class Sickrage(object):
@@ -31,17 +32,28 @@ class Sickrage(object):
     @cherrypy.expose()
     @require()
     def index(self):
-        return htpc.LOOKUP.get_template('sickrage.html').render(scriptname='sickrage')
+        return htpc.LOOKUP.get_template('sickrage.html').render(scriptname='sickrage', webinterface=self.webinterface())
+
+    def webinterface(self):
+        host = striphttp(htpc.settings.get('sickrage_host', ''))
+        port = str(htpc.settings.get('sickrage_port', ''))
+        apikey = htpc.settings.get('sickrage_apikey', '')
+        ssl = 's' if htpc.settings.get('sickrage_ssl', 0) else ''
+        sickrage_basepath = fix_basepath(htpc.settings.get('sickrage_basepath', '/'))
+
+        url = 'http%s://%s:%s%s' % (ssl, host, port, sickrage_basepath)
+
+        return url
 
     @cherrypy.expose()
     @require()
-    def view(self, tvdbid):
-        if not (tvdbid.isdigit()):
+    def view(self, indexerid):
+        if not (indexerid.isdigit()):
             raise cherrypy.HTTPError("500 Error", "Invalid show ID.")
-            self.logger.error("Invalid show ID was supplied: " + str(tvdbid))
+            self.logger.error("Invalid show ID was supplied: " + str(indexerid))
             return False
 
-        return htpc.LOOKUP.get_template('sickrage_view.html').render(scriptname='sickrage_view', tvdbid=tvdbid)
+        return htpc.LOOKUP.get_template('sickrage_view.html').render(scriptname='sickrage_view', indexerid=indexerid)
 
     @cherrypy.expose()
     @require()
@@ -50,17 +62,18 @@ class Sickrage(object):
         ssl = 's' if sickrage_ssl else ''
         self.logger.debug("Testing connectivity")
         try:
-            if not (sickrage_basepath.endswith('/')):
-                sickrage_basepath += "/"
+            if not sickrage_basepath:
+                sickrage_basepath = fix_basepath(sickrage_basepath)
 
-            url = 'http' + ssl + '://' + sickrage_host + ':' + sickrage_port + sickrage_basepath + 'api/' + sickrage_apikey + '/?cmd=sb.ping'
+            url = 'http%s://%s:%s%sapi/%s/?cmd=sb.ping' % (ssl, striphttp(sickrage_host), sickrage_port, sickrage_basepath, sickrage_apikey)
+
             self.logger.debug("Trying to contact sickrage via " + url)
             response = loads(urlopen(url, timeout=10).read())
             if response.get('result') == "success":
-                self.logger.debug("Sicbeard connectivity test success")
+                self.logger.debug("Sickrage connectivity test success")
                 return response
         except:
-            self.logger.error("Unable to contact sickrage via " + url)
+            self.logger.error("Unable to contact sickrage via %s" % url)
             return
 
     @cherrypy.expose()
@@ -79,17 +92,17 @@ class Sickrage(object):
 
     @cherrypy.expose()
     @require()
-    def GetBanner(self, tvdbid):
+    def GetBanner(self, indexerid):
         self.logger.debug("Fetching Banner")
         cherrypy.response.headers['Content-Type'] = 'image/jpeg'
-        return self.fetch('show.getbanner&tvdbid=' + tvdbid, True)
+        return self.fetch('show.getbanner&indexerid=' + indexerid, True)
 
     @cherrypy.expose()
     @require()
-    def GetPoster(self, tvdbid):
+    def GetPoster(self, indexerid):
         self.logger.debug("Fetching Poster")
         cherrypy.response.headers['Content-Type'] = 'image/jpeg'
-        return self.fetch('show.getposter&tvdbid=' + tvdbid, True)
+        return self.fetch('show.getposter&indexerid=' + indexerid, True)
 
     @cherrypy.expose()
     @require()
@@ -116,22 +129,22 @@ class Sickrage(object):
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def GetShow(self, tvdbid):
+    def GetShow(self, indexerid):
         self.logger.debug("Fetching Show")
-        return self.fetch('show&tvdbid=' + tvdbid)
+        return self.fetch('show&indexerid=' + indexerid)
 
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
     def GetEpisode(self, strShowID, strSeason, strEpisode):
-        return self.fetch("episode&tvdbid=" + strShowID + "&season=" + strSeason + "&episode=" + strEpisode + "&full_path=1")
+        return self.fetch("episode&indexerid=" + strShowID + "&season=" + strSeason + "&episode=" + strEpisode + "&full_path=1")
 
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def GetSeason(self, tvdbid, season):
+    def GetSeason(self, indexerid, season):
         self.logger.debug("Fetching Season")
-        return self.fetch('show.seasons&tvdbid=' + tvdbid + '&season=' + season)
+        return self.fetch('show.seasons&indexerid=' + indexerid + '&season=' + season)
 
     @cherrypy.expose()
     @require(member_of(htpc.role_user))
@@ -146,22 +159,22 @@ class Sickrage(object):
     @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
     def Restart(self):
-        self.logger.debug("Restart sb")
+        self.logger.debug("Restart sr")
         return self.fetch('sb.restart', False, 15)
 
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def SearchEpisodeDownload(self, tvdbid, season, episode):
+    def SearchEpisodeDownload(self, indexerid, season, episode):
         self.logger.debug("Fetching Episode Downloads")
-        return self.fetch('episode.search&tvdbid=' + tvdbid + '&season=' + season + '&episode=' + episode, False, 45)
+        return self.fetch('episode.search&indexerid=' + indexerid + '&season=' + season + '&episode=' + episode, False, 45)
 
     @cherrypy.expose()
     @require()
     @cherrypy.tools.json_out()
-    def SearchSubtitle(self, tvdbid, season, episode):
+    def SearchSubtitle(self, indexerid, season, episode):
         self.logger.debug("Fetching subtitle")
-        return self.fetch('episode.subtitlesearch&tvdbid=' + tvdbid + '&season=' + season + '&episode=' + episode, False, 45)
+        return self.fetch('episode.subtitlesearch&indexerid=' + indexerid + '&season=' + season + '&episode=' + episode, False, 45)
 
     @cherrypy.expose()
     @require(member_of(htpc.role_user))
@@ -173,16 +186,16 @@ class Sickrage(object):
     @cherrypy.expose()
     @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
-    def ForceFullUpdate(self, tvdbid):
-        self.logger.debug("Force full update for tvdbid " + tvdbid)
-        return self.fetch("show.update&tvdbid=" + tvdbid)
+    def ForceFullUpdate(self, indexerid):
+        self.logger.debug("Force full update for indexerid %s" % indexerid)
+        return self.fetch("show.update&indexerid=" + indexerid)
 
     @cherrypy.expose()
     @require(member_of(htpc.role_user))
     @cherrypy.tools.json_out()
-    def RescanFiles(self, tvdbid):
-        self.logger.debug("Rescan all local files for tvdbid " + tvdbid)
-        return self.fetch("show.refresh&tvdbid=" + tvdbid)
+    def RescanFiles(self, indexerid):
+        self.logger.debug("Rescan all local files for indexerid %s" % indexerid)
+        return self.fetch("show.refresh&indexerid=" + indexerid)
 
     @cherrypy.expose()
     @cherrypy.tools.json_out()
@@ -207,21 +220,19 @@ class Sickrage(object):
 
     def fetch(self, cmd, img=False, timeout=20):
         try:
-            host = htpc.settings.get('sickrage_host', '')
+            host = striphttp(htpc.settings.get('sickrage_host', ''))
             port = str(htpc.settings.get('sickrage_port', ''))
             apikey = htpc.settings.get('sickrage_apikey', '')
             ssl = 's' if htpc.settings.get('sickrage_ssl', 0) else ''
-            sickrage_basepath = htpc.settings.get('sickrage_basepath', '/')
+            sickrage_basepath = fix_basepath(htpc.settings.get('sickrage_basepath', '/'))
 
-            if not (sickrage_basepath.endswith('/')):
-                sickrage_basepath += "/"
-            url = 'http' + ssl + '://' + host + ':' + str(port) + sickrage_basepath + 'api/' + apikey + '/?cmd=' + cmd
+            url = 'http%s://%s:%s%sapi/%s/?cmd=%s' % (ssl, host, port, sickrage_basepath, apikey, cmd)
 
-            self.logger.info("Fetching information from: " + url)
-            self.logger.debug("Fetching information from: " + url)
+            self.logger.debug("Fetching information from: %s" % url)
 
             if img is True:
-                return urlopen(url, timeout=timeout).read()
+                # Cache the images
+                return get_image(url)
 
             return loads(urlopen(url, timeout=timeout).read())
         except Exception as e:

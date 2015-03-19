@@ -8,6 +8,7 @@ from urllib2 import urlopen
 from json import loads
 import logging
 from cherrypy.lib.auth2 import require, member_of
+from htpc.helpers import fix_basepath, get_image, striphttp
 
 
 class Sickbeard(object):
@@ -36,11 +37,9 @@ class Sickbeard(object):
     def webinterface(self):
         """ Generate page from template """
         ssl = "s" if htpc.settings.get("sickbeard_ssl", 0) else ""
-        host = htpc.settings.get("sickbeard_host", "")
+        host = striphttp(htpc.settings.get("sickbeard_host", ""))
         port = str(htpc.settings.get("sickbeard_port", ""))
-        basepath = htpc.settings.get("sickbeard_basepath", "/")
-        if not basepath.endswith("/"):
-            basepath += "/"
+        basepath = fix_basepath(htpc.settings.get("sickbeard_basepath", "/"))
 
         url = "http%s://%s::%s%s" % (ssl, host, port, basepath)
 
@@ -63,10 +62,11 @@ class Sickbeard(object):
         ssl = "s" if sickbeard_ssl else ""
         self.logger.debug("Testing connectivity")
         try:
-            if not (sickbeard_basepath.endswith("/")):
-                sickbeard_basepath += "/"
+            if not sickbeard_basepath:
+                sickbeard_basepath = fix_basepath(sickbeard_basepath)
 
-            url = "http" + ssl + "://" + sickbeard_host + ":" + sickbeard_port + sickbeard_basepath + "api/" + sickbeard_apikey + "/?cmd=sb.ping"
+            url = "http%s://%s:%s%sapi/%s/?cmd=sb.ping" % (ssl, striphttp(sickbeard_host), sickbeard_port, sickbeard_apikey)
+
             self.logger.debug("Trying to contact sickbeard via " + url)
             response = loads(urlopen(url, timeout=10).read())
             if response.get("result") == "success":
@@ -188,17 +188,15 @@ class Sickbeard(object):
             port = str(htpc.settings.get("sickbeard_port", ""))
             apikey = htpc.settings.get("sickbeard_apikey", "")
             ssl = "s" if htpc.settings.get("sickbeard_ssl", 0) else ""
-            sickbeard_basepath = htpc.settings.get("sickbeard_basepath", "/")
-
-            if not sickbeard_basepath.endswith("/"):
-                sickbeard_basepath += "/"
+            sickbeard_basepath = fix_basepath(htpc.settings.get("sickbeard_basepath", "/"))
 
             url = "http" + ssl + "://" + host + ":" + str(port) + sickbeard_basepath + "api/" + apikey + "/?cmd=" + cmd
 
             self.logger.debug("Fetching information from: " + url)
 
             if img is True:
-                return urlopen(url, timeout=timeout).read()
+                # Cache image
+                return get_image(url)
 
             return loads(urlopen(url, timeout=timeout).read())
         except:

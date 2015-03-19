@@ -13,7 +13,6 @@ import re
 import itertools
 import operator
 from cherrypy.lib.auth2 import require, member_of
-from operator import itemgetter
 #from uuid import getnode as get_mac
 
 
@@ -40,6 +39,7 @@ class Samsungtv:
         ]})
 
     @cherrypy.expose()
+    @require()
     def index(self):
         return htpc.LOOKUP.get_template('samsungtv.html').render(scriptname='samsungtv')
 
@@ -86,6 +86,7 @@ class Samsungtv:
             return ''
 
     @cherrypy.expose()
+    @require()
     @cherrypy.tools.json_out()
     def findtv(self, id=None):
         result_list = []
