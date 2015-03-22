@@ -5,8 +5,7 @@ import cherrypy
 import htpc
 import logging
 import requests
-from cherrypy.lib.auth2 import require
-
+from cherrypy.lib.auth2 import require, member_of
 from urllib import urlencode
 from json import loads
 from htpc.helpers import get_image, striphttp
@@ -161,17 +160,17 @@ class Headphones(object):
         return self.fetch('refreshArtist&id=%s' % artistId, text=True)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def DeleteArtist(self, artistId):
         return self.fetch('delArtist&id=%s' % artistId, text=True)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def PauseArtist(self, artistId):
         return self.fetch('pauseArtist&id=%s' % artistId, text=True)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def ResumeArtist(self, artistId):
         return self.fetch('resumeArtist&id=%s' % artistId, text=True)
 
@@ -184,7 +183,7 @@ class Headphones(object):
         return self.fetch('queueAlbum&id=%s' % albumId, text=True)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def UnqueueAlbum(self, albumId):
         return self.fetch('unqueueAlbum&id=%s' % albumId, text=True)
 
@@ -231,17 +230,17 @@ class Headphones(object):
         return self.fetch('forceActiveArtistsUpdate', text=True)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def ShutDown(self):
         return self.fetch('shutdown', text=True)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def UpDate(self):
         return self.fetch('update', text=True)
 
     @cherrypy.expose()
-    @require()
+    @require(member_of(htpc.role_user))
     def ReStart(self):
         return self.fetch('restart', text=True)
 
