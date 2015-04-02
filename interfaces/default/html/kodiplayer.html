@@ -1,0 +1,147 @@
+<%!
+import htpc
+WEBDIR = htpc.WEBDIR
+%><!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>HTPC Manager - ${title}</title>
+    <script src="${htpc.WEBDIR}js/libs/mediaelement/jquery.js"></script>
+    <script src="${htpc.WEBDIR}js/libs/mediaelement/mediaelement-and-player.js"></script>
+    <script src="${htpc.WEBDIR}js/libs/jquery-vlc.js"></script>
+    <script src="${htpc.WEBDIR}js/libs/jquery.srt.js"></script>
+    <link rel="stylesheet" href="${htpc.WEBDIR}js/libs/mediaelement/mediaelementplayer.min.css" /></code>
+    <style>
+        body {
+            background-color: #ccc;
+            margin: 0px;
+            backgroung-image: 
+        }
+        .srt{
+            top: 50px;
+            position: absolute;
+            color: #FFFFFF;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+<a href="#" id="teste" onclick="teste()">teste</a>
+    <div width="800" height="600" id="container-me">
+    <video width="800" height="600" id="player" controls="controls" preload="none" autoplay="true">
+        <source src="${file}" />
+        % for sub in subtitles:
+            <track kind="subtitles" src="${WEBDIR}kodi/subtitle/?server=${server}&path=${sub['path']}" srclang="${sub['srclang']}" label="${sub['label']} (${sub['type']})"></track>
+        % endfor
+    </video>
+    </div>
+    <div width="100%" height="100%" id="container-vlc"></div>
+    ${streamdetails}
+    
+</body>
+    <script>
+    var player = ""
+        $(document).ready(function() {
+   /*     
+        mejs.PluginDetector.addPlugin('flash','Shockwave Flash','application/x-shockwave-flash','ShockwaveFlash.ShockwaveFlash', function(ax) {
+	// adapted from SWFObject
+	var version = [],
+		d = ax.GetVariable("$version");
+	if (d) {
+		d = d.split(" ")[1].split(",");
+		version = [parseInt(d[0], 10), parseInt(d[1], 10), parseInt(d[2], 10)];
+	}
+	return version;
+});*/
+        player = new MediaElementPlayer('#player', {
+                //mode: 'shim',
+                pluginPath: "${htpc.WEBDIR}js/libs/mediaelement/",
+                defaultVideoWidth: 800,
+                defaultVideoHeight: 600,
+                videoWidth: 800,
+                videoHeight: 600,
+                audioWidth: 400,
+                audioHeight: 30,
+                startVolume: 1,
+                loop: false,
+                // enables Flash and Silverlight to resize to content size
+                enableAutosize: true,
+                // the order of controls you want on the control bar (and other plugins below)
+                features: ['playpause','progress','current','duration','tracks','volume','fullscreen'],
+                // Hide controls when playing and mouse is not over the video
+                alwaysShowControls: false,
+                // force iPad's native controls
+                iPadUseNativeControls: false,
+                // force iPhone's native controls
+                iPhoneUseNativeControls: false, 
+                // force Android's native controls
+                AndroidUseNativeControls: false,
+                // forces the hour marker (##:00:00)
+                alwaysShowHours: false,
+                // show framecount in timecode (##:00:00:00)
+                enableKeyboard: true,
+                // when this player starts, it will pause other players
+                pauseOtherPlayers: true,
+
+                customError: '<a href="">Download</a><BR /><a href="#" onclick="try_vlc()">VLC</a>'
+            });
+        });
+
+        function try_vlc(){
+                embed = '<OBJECT classid="clsid:E23FE9C6-778E-49D4-B537-38FCDE4887D8" codebase="http://downloads.videolan.org/pub/videolan/vlc/latest/win32/axvlc.cab" width="400" height="300" id="vlc" events="True">'+
+                            '<param name="Src" value="" />'+
+                            '<param name="ShowDisplay" value="True" />'+
+                            '<param name="AutoLoop" value="True" />'+
+                            '<param name="AutoPlay" value="True" />'+
+                            '<param name="Volume" value="100">'+
+                            '<param name="windowless" value="True">'+
+                            '<embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org" width="640" height="480" id="vlc1" target="" windowless="True"/>'+ 
+                        '</OBJECT>'+
+                        '<div class="srt" data-video="vlc1" data-srt="${WEBDIR}kodi/subtitle/?server=${server}&path=${subtitles[0]['path']}">a</div>'
+                $('#container-me').hide()
+                $('#container-vlc').html(embed)
+                player = $("#vlc1")[0]
+                player.playlist.add("${file}")
+                player.playlist.play()
+        }
+        
+        function teste(){
+            $('#vlcsimulator').mediaelementplayer()
+        }
+                
+                //var player = $('#player')[0].player;
+                
+/*                
+                var player = VLCobject.embedPlayer('container-vlc', 800, 600, true);
+                filename = "${file}"
+                player.options.clear()
+                
+                player.options.set('http-reconnect')
+                player.options.set('http-caching',1000)
+                
+                player.options.set("sub-file", "http://192.168.0.10:8085/kodi/subtitle/?server=${server}&path=${subtitles[0]['path']}");
+                player.play(filename)
+                player.subtitle("http://192.168.0.10:8085/")
+                //plugin = $("#container-vlc_plugin")[0]
+/*var methods = [];
+for (var m in plugin) {
+    if (typeof plugin[m] == "function") {
+        methods.push(m);
+    }
+}
+console.log(methods.join(","));
+//console.log(getAllMethods(plugin));
+                //player.playlist.add(filename)
+               //plugin.play()//input.add_subtitle("http://192.168.0.10:8085/kodi/subtitle/?server=${server}&path=${subtitles[0]['path']}")
+                //alert(player.version())
+                
+                
+                //var id = plugin.playlist.add(filename);
+                //plugin.playlist.playItem(id);
+                
+                //player.play(filename + " :sub-file=" + )
+                
+        }       */
+
+       
+    </script>
+</html>

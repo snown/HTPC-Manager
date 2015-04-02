@@ -8,6 +8,7 @@ import base64
 import socket
 import struct
 from urllib2 import quote
+import urllib
 from jsonrpclib import Server
 from sqlobject import SQLObject, SQLObjectNotFound
 from sqlobject.col import StringCol, IntCol
@@ -55,7 +56,119 @@ class Kodi(object):
                  'name': 'kodi_enable_pvr'},
                 {'type': 'bool',
                  'label': 'Hide watched',
-                 'name': 'kodi_hide_watched'}
+                 'name': 'kodi_hide_watched'},
+                {'type': 'bool',
+                 'label': 'Enable VOD (experimental)',
+                 'name': 'kodi_vod_enabled'},
+                {'type': 'select',
+                 'label': 'Plugin order',
+                 'name': 'kodi_vod_plugin_order',
+                 'options': [
+                    {'name': 'HTML5,Flash,Silverlight,VLC', 'value': 0},
+                    {'name': 'VLC,HTML5,Flash,Silverlight', 'value': 0},
+                    {'name': 'Flash,Silverlight,VLC,HTML5', 'value': 0},
+                    {'name': 'Flash,Silverlight,HTML5,VLC', 'value': 0},
+                    ]
+                },
+                {'type': 'bool',
+                 'label': 'Transcode with VLC (more experimental)',
+                 'desc': 'VLC must be running in background. Use command: vlc --intf http --http-port=xxxx --http-password my_password',
+                 'name': 'kodi_vlc_enabled'},
+                {'type': 'text',
+                 'label': 'HTTP interface IP/Host',
+                 'name': 'kodi_vlc_ip'},
+                {'type': 'text',
+                 'label': 'Port',
+                 'name': 'kodi_vlc_port'},
+                {'type': 'password',
+                 'label': 'Password',
+                 'desc': 'You can access the transcoding interface going http://vlc_ip_or_host:port/vlm/ (leave user name blank)',
+                 'name': 'kodi_vlc_password'},
+                {'type': 'select',
+                 'label': 'Default profile',
+                 'name': 'kodi_vlc_default_profile',
+                 'options': [
+                    {'name': 'Direct', 'value': 0},
+                    {'name': 'Profile 1', 'value': 1},
+                    {'name': 'Profile 2', 'value': 2},
+                    {'name': 'Profile 3', 'value': 3}
+                    ]
+                },
+                {'type': 'bool',
+                 'label': 'Transcode Profile 1 enabled',
+                 'name': 'kodi_vlc_transcode1_enabled'},
+                {'type': 'text',
+                 'label': 'Name',
+                 'name': 'kodi_vlc_transcode1_name'},
+                {'type': 'select',
+                 'label': 'Protocol',
+                 'name': 'kodi_vlc_transcode1_protocol',
+                 'options': [
+                    {'name': 'RTSP', 'value': 'rtsp'},
+                    {'name': 'HTTP', 'value': 'http'},
+                    {'name': 'MS-WMSP (MMSH)', 'value': 'mmsh'},
+                    {'name': 'RTP / Mpeg Transport Stream', 'value': 'rtpmts'},
+                    {'name': 'RTP Audio/Video Profile', 'value': 'rtpavp'},
+                    {'name': 'UDP (legacy)', 'value': 'udp'},
+                    {'name': 'IceCast', 'value': 'icecast'}
+                    ]
+                },
+                {'type': 'text',
+                 'label': 'Port',
+                 'name': 'kodi_vlc_transcode1_port'},
+                {'type': 'text',
+                 'label': 'Settings',
+                 'name': 'kodi_vlc_transcode1_settings'},
+                {'type': 'bool',
+                 'label': 'Transcode Profile 2 enabled',
+                 'name': 'kodi_vlc_transcode2_enabled'},
+                {'type': 'text',
+                 'label': 'Name',
+                 'name': 'kodi_vlc_transcode2_name'},
+                {'type': 'select',
+                 'label': 'Protocol',
+                 'name': 'kodi_vlc_transcode2_protocol',
+                 'options': [
+                    {'name': 'RTSP', 'value': 'rtsp'},
+                    {'name': 'HTTP', 'value': 'http'},
+                    {'name': 'MS-WMSP (MMSH)', 'value': 'mmsh'},
+                    {'name': 'RTP / Mpeg Transport Stream', 'value': 'rtpmts'},
+                    {'name': 'RTP Audio/Video Profile', 'value': 'rtpavp'},
+                    {'name': 'UDP (legacy)', 'value': 'udp'},
+                    {'name': 'IceCast', 'value': 'icecast'}
+                    ]
+                },
+                {'type': 'text',
+                 'label': 'Port',
+                 'name': 'kodi_vlc_transcode2_port'},
+                {'type': 'text',
+                 'label': 'Settings',
+                 'name': 'kodi_vlc_transcode2_settings'},
+                {'type': 'bool',
+                 'label': 'Transcode Profile 3 enabled',
+                 'name': 'kodi_vlc_transcode3_enabled'},
+                {'type': 'text',
+                 'label': 'Name',
+                 'name': 'kodi_vlc_transcode3_name'},
+                {'type': 'select',
+                 'label': 'Protocol',
+                 'name': 'kodi_vlc_transcode3_protocol',
+                 'options': [
+                    {'name': 'RTSP', 'value': 'rtsp'},
+                    {'name': 'HTTP', 'value': 'http'},
+                    {'name': 'MS-WMSP (MMSH)', 'value': 'mmsh'},
+                    {'name': 'RTP / Mpeg Transport Stream', 'value': 'rtpmts'},
+                    {'name': 'RTP Audio/Video Profile', 'value': 'rtpavp'},
+                    {'name': 'UDP (legacy)', 'value': 'udp'},
+                    {'name': 'IceCast', 'value': 'icecast'}
+                    ]
+                },
+                {'type': 'text',
+                 'label': 'Port',
+                 'name': 'kodi_vlc_transcode3_port'},
+                {'type': 'text',
+                 'label': 'Settings',
+                 'name': 'kodi_vlc_transcode3_settings'}
             ]
         })
 
@@ -106,6 +219,93 @@ class Kodi(object):
     def index(self):
         """ Generate page from template """
         return htpc.LOOKUP.get_template('kodi.html').render(scriptname='kodi')
+
+    @cherrypy.expose()
+    @require()
+    def player(self, type=None, id=None, server=None):
+        """ Generate page from template """
+        """ Play a file in Browser """
+        try:
+            serverinfo = KodiServers.selectBy(id=server).getOne()
+        except SQLObjectNotFound:
+            return
+
+        url = serverinfo.host + ':' + str(serverinfo.port) 
+        if serverinfo.username and serverinfo.password:
+            url = serverinfo.username + ':' + serverinfo.password + '@' + url
+        url = 'http://' + url
+
+        try:
+            kodi = Server(url + '/jsonrpc')
+            if type == 'movie':
+                properties = ['title', 'year', 'file', 'streamdetails']
+                result = kodi.VideoLibrary.GetMovieDetails(movieid=int(id),properties=properties)
+                title = result['moviedetails']['title'] + ' (' + str(result['moviedetails']['year']) + ')'
+                streamdetails = result['moviedetails']['streamdetails']
+                file = url + '/vfs/' + quote(result['moviedetails']['file'])
+                rawfile = result['moviedetails']['file']
+            elif type == 'episode':
+                properties = ['showtitle', 'episode', 'season', 'file', 'streamdetails']
+                result = kodi.VideoLibrary.GetEpisodeDetails(episodeid=int(id),properties=properties)
+                title = result['episodedetails']['showtitle'] + ' (' + str(result['episodedetails']['season']) + 'x' + str(result['episodedetails']['episode']) + ')'
+                streamdetails = result['episodedetails']['streamdetails']
+                file = url + '/vfs/' + quote(result['episodedetails']['file'])
+                rawfile = result['episodedetails']['file']
+            else:
+                return 
+
+            separator = rawfile.rfind('/') if rawfile.rfind('/') > rawfile.rfind('\\') else rawfile.rfind('\\')
+            path = rawfile[:separator + 1] 
+            fileList = kodi.Files.GetDirectory(directory=path)
+
+            subtitles=[]
+            for files in fileList['files']:
+                x = files['file'].rfind('.')
+                if x: 
+                    extension = files['file'][x+1:]
+                    if extension in ['srt','vtt']:
+                        y = rawfile.rfind('.')
+                        if y:
+                            if files['file'].find(rawfile[:y]) == 0:
+                                if y+1 == x:
+                                    srclang = files['file'][y+1:x]
+                                else:
+                                    srclang = 'und'
+                                subtitles.append({'srclang':srclang,'label':srclang.upper(),'type':extension,'path':quote(files['file'])})
+                
+        except Exception, e:
+            self.logger.exception(e)
+            self.logger.error("Unable to fetch info")
+            return
+            
+        return htpc.LOOKUP.get_template('kodiplayer.html').render(
+            scriptname='player',
+            title=title,
+            file=file,
+            encodedfile=quote(file),
+            subtitles=subtitles,
+            streamdetails=streamdetails,
+            id=id,
+            server=server,
+            type=type
+        )
+
+    @cherrypy.expose()
+    @require()
+    def subtitle(self, server=None, path=None):
+        try:
+            serverinfo = KodiServers.selectBy(id=server).getOne()
+        except SQLObjectNotFound:
+            return
+
+        url = serverinfo.host + ':' + str(serverinfo.port) 
+        if serverinfo.username and serverinfo.password:
+            url = serverinfo.username + ':' + serverinfo.password + '@' + url
+        url = 'http://' + url
+
+        f = urllib.urlopen(url + '/vfs/' + path)
+        sub = f.read()
+        return sub
 
     @cherrypy.expose()
     @require()
