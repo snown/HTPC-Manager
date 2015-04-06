@@ -217,10 +217,12 @@ function loadMovies(options) {
 
                     movieAnchor.append($('<h6>').addClass('title').html(shortenText(movie.title, 12)));
 
-                    movieItem.append($('<a>').attr('href', '#').html("Play Local").click(function(e) {
-                        e.preventDefault();
-                        playMovie(movie.movieid);
-                    }));
+                    if (kodi_vod_enabled){
+                        movieItem.append($('<a>').attr('href', '#').html("Play Local").click(function(e) {
+                            e.preventDefault();
+                            playMovie(movie.movieid);
+                        }));
+                    }
 
                     movieItem.append(movieAnchor);
 
@@ -236,8 +238,8 @@ function loadMovies(options) {
 }
 
 function playMovie(movieid) {
-        var serverid = $('#servers').children('option:selected').attr('value')
-        window.open(WEBDIR + 'kodi/player/?type=movie&id=' + movieid +'&server='+ serverid, 'video_player', "menubar=no,location=yes,resizable=yes,scrollbars=no,status=no");
+        var serverid = $('#servers').children('option:selected').attr('value') 
+        window.open(WEBDIR + 'kodi/player/?type=movie&id=' + movieid +'&server='+ serverid + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
   return false;
 }
 
@@ -433,10 +435,12 @@ function loadEpisodes(options) {
 
                     episodeAnchor.append($('<h6>').addClass('title').html(shortenText(episode.label, 18)));
 
-                    episodeItem.append($('<a>').attr('href', '#').html("Play Local").click(function(e) {
-                        e.preventDefault();
-                        playEpisode(episode.episodeid);
-                    }));
+                    if (kodi_vod_enabled) {
+                        episodeItem.append($('<a>').attr('href', '#').html("Play Local").click(function(e) {
+                            e.preventDefault();
+                            playEpisode(episode.episodeid);
+                        }));
+                    }
 
                     episodeItem.append(episodeAnchor);
                     
@@ -455,7 +459,7 @@ function loadEpisodes(options) {
 
 function playEpisode(episodeid) {
         var serverid = $('#servers').children('option:selected').attr('value')
-        window.open(WEBDIR + 'kodi/player/?type=episode&id=' + episodeid +'&server='+ serverid, 'video_player', "menubar=no,location=yes,resizable=yes,scrollbars=no,status=no");
+        window.open(WEBDIR + 'kodi/player/?type=episode&id=' + episodeid +'&server='+ serverid + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
   return false;
 }
 
