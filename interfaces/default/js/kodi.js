@@ -218,10 +218,10 @@ function loadMovies(options) {
                     movieAnchor.append($('<h6>').addClass('title').html(shortenText(movie.title, 12)));
 
                     if (kodi_vod_enabled){
-                        movieItem.append($('<a>').attr('href', '#').html("Play Local").click(function(e) {
+                        movieItem.append($('<h6>').addClass('title').append($('<a>').attr('href', '#').html("Play in Browser").click(function(e) {
                             e.preventDefault();
                             playMovie(movie.movieid);
-                        }));
+                        })));
                     }
 
                     movieItem.append(movieAnchor);
@@ -436,10 +436,10 @@ function loadEpisodes(options) {
                     episodeAnchor.append($('<h6>').addClass('title').html(shortenText(episode.label, 18)));
 
                     if (kodi_vod_enabled) {
-                        episodeItem.append($('<a>').attr('href', '#').html("Play Local").click(function(e) {
+                        episodeItem.append($('<h6>').addClass('title').append($('<a>').attr('href', '#').html("Play in Browser").click(function(e) {
                             e.preventDefault();
                             playEpisode(episode.episodeid);
-                        }));
+                        })));
                     }
 
                     episodeItem.append(episodeAnchor);

@@ -1066,3 +1066,109 @@ div.mejs-quality-button {
 	position: relative; 
 }
 /* End: method */
+
+/* Start: vlc */
+.mejs-captions-selector input[type=radio]{
+  display: none;
+}
+.mejs-captions-selector input[type=radio] + label {
+  display: block;
+}
+.mejs-captions-selector input[type='radio'] + label:before {
+  display: inline-block;
+  font-family: FontAwesome;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-right: 0px;
+  width: 20px;
+  font-size: 14px;
+}
+.vlcSubs input[type=radio] + label:before {
+  content: "\f037"; 
+  color: #777;
+}
+.vlcAudios input[type=radio] + label:before {
+  content: "\f028"; 
+  color: #777;
+}
+.srtSubs input[type=radio] + label:before {
+  content: "\f037"; 
+  color: #777;
+}
+.vlcSubs input[type=radio]:checked + label:before {
+  content: "\f037"; 
+  color: #eee;
+}
+.vlcAudios input[type=radio]:checked + label:before {
+  content: "\f028"; 
+  color: #eee;
+}
+.srtSubs input[type=radio]:checked + label:before {
+  content: "\f037"; 
+  color: #eee;
+}
+.mejs-captions-selector label {
+  padding-left: 0;
+  font-size: 12px !important;
+  width: 100% !important;
+}
+.mejs-captions-selector  {
+  text-align: left;
+}
+/* End: vlc */
+
+/* Start: HTPC Manager */
+.mejs-container {
+    height: 100% !important;
+    width: 100% !important;
+    text-align: center;
+    vertical-align: middle;
+}
+object, video, embed {
+    vertical-align: middle;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    width: 100%;
+    display: inline-block;
+}
+.me-plugin {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 100% !important;
+    max-width: 100% !important;
+}
+.mejs-overlay {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    bottom: 0px;
+    right: 0px;
+}
+.mejs-captions-layer{
+    width: 100%;
+    line-height: 32px;
+    font-size: 28px;
+    color: #fff;
+}
+.mejs-captions-text {
+    padding: 0px;
+    background: transparent;
+    text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 1px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+}
+.content {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    margin:0px;
+    padding: 0px;
+    overflow: hidden;
+}
+/* End: HTPC Manager */

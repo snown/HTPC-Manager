@@ -2,63 +2,20 @@
 import htpc
 settings = htpc.settings
 WEBDIR = htpc.WEBDIR
-%><% s = self.attr.settings %><!DOCTYPE html>
+%><!DOCTYPE html>
 <html lang="en">
 <head>
     <title>HTPC Manager - ${title}</title>
-    <script src="${htpc.WEBDIR}js/libs/mediaelement/jquery.js"></script>
+    <link href="${htpc.WEBDIR}favicon.ico" type="image/x-icon" rel="icon">
+    <link rel="apple-touch-icon" href="${htpc.WEBDIR}img/ios/homescreen.png">
+    <script src="${htpc.WEBDIR}js/libs/jquery.min.js"></script>
     <script src="${htpc.WEBDIR}js/libs/mediaelement/mediaelement-and-player.js"></script>
-    <link rel="stylesheet" href="${htpc.WEBDIR}js/libs/mediaelement/mediaelementplayer.min.css" />
-    <link href="${htpc.WEBDIR}css/themes/${s.get('app_theme','default')}/bootstrap.min.css" rel="stylesheet">
-    <link href="${htpc.WEBDIR}css/bootstrap-responsive.min.css" rel="stylesheet">
-    <link href="${htpc.WEBDIR}css/base.css" rel="stylesheet">
-    <link href="${htpc.WEBDIR}css/themes/${s.get('app_theme','default')}/style.css" rel="stylesheet">
-
-    <style>
-    .mejs-container {
-        height: 100% !important;
-        width: 100% !important;
-        text-align: center;
-        vertical-align: middle;
-    }
-    object, video, embed {
-        vertical-align: middle;
-        height: 100%;
-        max-height: 100%;
-        max-width: 100%;
-        width: 100%;
-    }
-    .me-plugin {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 100%;
-    }
-    .mejs-overlay {
-        position: absolute;
-        top: 0px;
-        left: 0px;
-        bottom: 0px;
-        right: 0px;
-    }
-    .mejs-captions-layer{
-        width: 100%;
-        line-height: 32px;
-        font-size: 28px;
-        color: #fff;
-    }
-    .mejs-captions-text {
-        padding: 0px;
-        background: transparent;
-        text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 1px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
-    }
-    </style>
-        
+    <link rel="stylesheet" href="${htpc.WEBDIR}js/libs/mediaelement/mediaelementplayer.css" />
+    <link href="${htpc.WEBDIR}css/font-awesome.min.css" rel="stylesheet">
 </head>
 <body >
 <div class="container-fluid" >
-    <div class="content" style="position: absolute; top: 0px; bottom: 0px; left: 0px; right: 0px; margin:0px; padding: 0px ">
-    <!--<div id="player"</div>-->
+    <div class="content">
     <video width="800" height="600" id="player" controls="controls" preload="none" autoplay="true" >
        <source src="${file}" />
         % for sub in subtitles:
@@ -67,8 +24,6 @@ WEBDIR = htpc.WEBDIR
     </video>
     </div>
 </div>
-</body>
-
 <script>
     var player = ""
     $(document).ready(function() {
@@ -77,12 +32,13 @@ WEBDIR = htpc.WEBDIR
                 mode: '${mode}',
                 plugins: [${plugins}],
                 pluginPath: "${htpc.WEBDIR}js/libs/mediaelement/",
-                defaultVideoWidth: '',
+                flashName: "flashmediaelement-cdn.swf",
+                defaultVideoWidth: '100%',
                 defaultVideoHeight: '100%',
-                videoWidth: '',
+                videoWidth: '100%',
                 videoHeight: '100%',
                 enableAutosize: true,
-                setDimensions: true,
+                setDimensions: false,
                 audioWidth: 400,
                 audioHeight: 30,
                 startVolume: 1,
@@ -94,14 +50,19 @@ WEBDIR = htpc.WEBDIR
                 alwaysShowHours: false,
                 enableKeyboard: false,
                 pauseOtherPlayers: true,
-                features: ['playpause','current','progress','duration','method','tracks',${features}'volume','fullscreen'],
+                features: ['playpause','current','progress','duration','method','tracks','VLCtracks',${features}'volume','fullscreen'],
                 qualities: {${qualities}},
                 defaultquality: ${quality},
                 usePluginFullScreen: false,
+                keyActions: [],
                 customError: '<a href="">Download</a><BR />'
             });
-    
+        $(window).resize(function(e){
+            if (player.media.pluginApi != null && player.media.pluginApi.setVideoSize) {
+				player.media.pluginApi.setVideoSize($(player.media.pluginElement).outerWidth(true),$(player.media.pluginElement).outerHeight(true))
+			}
+        });
     });
-
 </script>
+</body>
 </html>

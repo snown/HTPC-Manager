@@ -240,7 +240,7 @@ mejs.PluginDetector = {
 				}
 			}
 		// Internet Explorer / ActiveX
-		} else if (typeof(window.ActiveXObject) != 'undefined') {
+		} else if (window.ActiveXObject || "ActiveXObject" in window) {
 			try {
 				ax = new ActiveXObject(activeX);
 				if (ax) {
@@ -1395,10 +1395,12 @@ mejs.HtmlMediaElementShim = {
 					specialIEContainer.outerHTML = '<OBJECT classid="clsid:E23FE9C6-778E-49D4-B537-38FCDE4887D8" codebase="http://downloads.videolan.org/pub/videolan/vlc/latest/win32/axvlc.cab" width="' + width + '" height="' + height + '" id="' + pluginid + '" events="True">'+
                                 '<param name="Src" value="" />'+
                                 '<param name="ShowDisplay" value="True" />'+
-                                '<param name="AutoLoop" value="True" />'+
-                                '<param name="AutoPlay" value="False" />'+
+                                '<param name="AutoLoop" value="false" />'+
+                                '<param name="AutoPlay" value="false" />'+
                                 '<param name="Volume" value="' + options.startVolume + '">'+
-                                '<param name="windowless" value="True">'+
+                                '<param name="windowless" value="true">'+
+                                '<param name="allowfullscreen" value="true">'+
+                                '<param name="controls" value="false">'+
                                 '<param name="native-scaling" value="True">'+
                             '</OBJECT>';
                     var player = $("#" + pluginid)[0];
@@ -1406,7 +1408,7 @@ mejs.HtmlMediaElementShim = {
                     player.removeEvent = function(eventname, callback){player.detachEvent(eventname, callback)};
 				} else {
 					container.innerHTML = '<embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org" width="' + width + '" height="' + height + '" id="' + pluginid +
-                    '" src="" AutoPlay="False" Volume="' + options.startVolume + '" windowless="True" native-scaling="True" />';
+                    '" src="" AutoPlay="False" Volume="' + options.startVolume + '" windowless="true" native-scaling="true" allowfullscreen="true" controls="false" />';
                     var player = $("#" + pluginid)[0];
                     player.addEvent = function(eventname, callback) {player.addEventListener(eventname, callback, false)}
                     player.removeEvent = function(eventname, callback) {player.removeEventListener(eventname, callback, false)}
@@ -1435,9 +1437,15 @@ mejs.HtmlMediaElementShim = {
                             player.setMuted = function( muted ) {
                                 player.audio.mute = muted;
                             }						
-                            player.setFullscreen = function( fullscreen ) {
-                                player.video.fullscreen = fullscreen;
-                            }						
+                            //player.setFullscreen = function( fullscreen ) {
+                                //player.video.fullscreen = fullscreen;
+                            //}						
+                            player.setVideoSize = function( w,h ) {
+                                var time = player.input.time
+                                player.playlist.stop();
+                                player.playlist.play();
+                                player.input.time = time
+                            }
                             player.loadMedia = function( src , autoplay) {
                                 player.playlist.clear()
                                 player.playlist.add(src)
@@ -1492,20 +1500,6 @@ mejs.HtmlMediaElementShim = {
                                 } else {
                                     createEvent(player, pluginMediaElement, 'canplay')
                                     createEvent(player, pluginMediaElement, 'loadedmetadata');
-                                    console.log('Subtitles:') 
-                                    for (i = 0; i < player.subtitle.count; i++) {
-                                        console.log(player.subtitle.description(i))
-                                    }
-                                    player.video.subtitle = 0;
-                                    if (player.subtitle.count){
-                                        player.subtitle.track = 0;
-                                    }
-                                    
-                                    console.log('Audios:')
-                                    for (i = 0; i < player.audio.count; i++) {
-                                        console.log(player.audio.description(i))
-                                    }
-                               
                                 }
                             });
 
@@ -2861,8 +2855,7 @@ if (typeof jQuery != 'undefined') {
 		},
 
 		setPlayerSize: function(width,height) {
-			
-            var t = this;
+			var t = this;
 
 			if( !t.options.setDimensions ) {
 				return false;
@@ -5625,22 +5618,11 @@ $.extend(mejs.MepDefaults,
 	});
 
 })(mejs.$);
-(function($) {
-
-	// quality button
-	$.extend(mejs.MepDefaults, {
-
-		qualities: ['Direct','Hight','Medium','Low'],
-
-		defaultquality: 'Direct',
-
-	});
-
+(function($) { 	// quality button
+	$.extend(mejs.MepDefaults, {qualities: ['Direct','Hight','Medium','Low'],defaultquality: 'Direct',});
 	$.extend(MediaElementPlayer.prototype, {
-
 		buildquality: function(player, controls, layers, media) {
 			var t = this;
-
 				var 
 					qualityButton = null,
 					qualitySelector = null,
@@ -5666,7 +5648,6 @@ $.extend(mejs.MepDefaults,
 
 				qualityButton = $(html).appendTo(controls);
 				qualitySelector = qualityButton.find('.mejs-quality-selector');				
-
 				playbackquality = t.options.defaultquality;
 
 				qualitySelector
@@ -5676,7 +5657,6 @@ $.extend(mejs.MepDefaults,
 						qualityButton.find('button').html(newquality);
 						qualityButton.find('.mejs-quality-selected').removeClass('mejs-quality-selected');
 						qualityButton.find('input[type="radio"]:checked').next().addClass('mejs-quality-selected');
-
                         var oldUrl = window.location.href.split("?");
                         if (oldUrl.length) {
                             var parameters = oldUrl[1].split("&");
@@ -5701,16 +5681,11 @@ $.extend(mejs.MepDefaults,
 					.css('top', (-1 * qualitySelector.height()) + 'px');
 		}
 	});
-
 })(mejs.$);
-(function($) {
-
-    // show player method
+(function($) { // show player method
 	$.extend(MediaElementPlayer.prototype, {
-
 		buildmethod: function(player, controls, layers, media) {
 			var t = this;
-                
 				switch(t.media.pluginType) {
                     case 'native':
                         methodname = 'HTML5'
@@ -5733,69 +5708,171 @@ $.extend(mejs.MepDefaults,
                     default:
                         methodname = t.media.pluginType
                 }
-                
-                var 
-					html = '<div class="mejs-time mejs-method">' + methodname + '</div>';
-
+                var html = '<div class="mejs-time mejs-method">' + methodname + '</div>';
 				qualityButton = $(html).appendTo(controls);
-
 		}
 	});
-
+})(mejs.$);
+(function($) { // vlc
+    $.extend(mejs.MepDefaults, {plugins: ['flash','silverlight','youtube','vimeo','vlc']});
+	$.extend(mejs.plugins, {vlc: [{version: [2,0,0], types:['audio/mpeg','audio/x-mpeg','video/mpeg','video/x-mpeg','video/mpeg-system','video/x-mpeg-system','audio/mp4','audio/x-m4a','video/mp4','application/mpeg4-iod','application/mpeg4-muxcodetable','video/x-m4v','video/x-msvideo','application/ogg','video/ogg','application/x-ogg','application/x-vlc-plugin','video/x-ms-asf-plugin','video/x-ms-asf','application/x-mplayer2','video/x-ms-wmv','video/x-ms-wvx','audio/x-ms-wma','application/x-google-vlc-plugin','audio/wav','audio/x-wav','audio/3gpp','video/3gpp','audio/3gpp2','video/3gpp2','video/divx','video/flv','video/x-flv','application/x-matroska','video/x-matroska','audio/x-matroska','application/xspf+xml','audio/x-mpegurl','video/webm','audio/webm','application/vnd.rn-realmedia','audio/x-realaudio','audio/amr','audio/x-flac','audio/mkv','audio/avi','video/m4v','video/mov','video/rtmp','audio/flv','audio/x-flv','audio/mp3','audio/m4a','video/youtube','video/x-youtube','application/x-mpegURL','video/webm']}]});
+    $.extend(mejs.PluginDetector, {
+    
+        addVLC: function() {
+            if (typeof(this.nav.plugins) != 'undefined' && typeof this.nav.plugins['VLC Web Plugin'] == 'object') {
+                var description = this.nav.plugins['VLC Web Plugin'].description;
+                if (description && !(typeof this.nav.mimeTypes != 'undefined' && this.nav.mimeTypes['application/x-vlc-plugin'] && !this.nav.mimeTypes['application/x-vlc-plugin'].enabledPlugin)) {
+                    this.plugins['vlc'] = [2,0,0]
+                    return
+                }
+            } else if (window.ActiveXObject || "ActiveXObject" in window) {
+                try {
+                    var ax = new ActiveXObject('VideoLAN.VLCPlugin.2');
+                    if (ax) {
+                        this.plugins['vlc'] = [2,0,0]
+                        return
+                    }
+                }
+                catch (e) { }
+            }
+            this.plugins['vlc'] = [0,0,0]
+        }
+        
+    });
+	$.extend(MediaElementPlayer.prototype, {
+		
+        adjustLanguageBox:function() {
+			var t = this;
+            t.captionsButton.find('.mejs-captions-selector').height(
+                t.captionsButton.find('.mejs-captions-selector .srtSubs').outerHeight(true) +
+                t.captionsButton.find('.mejs-captions-selector .vlcAudios').outerHeight(true) +
+                t.captionsButton.find('.mejs-captions-selector .vlcSubs').outerHeight(true) +
+                t.captionsButton.find('.mejs-captions-translations').outerHeight(true)
+            );
+		},
+    	buildVLCtracks: function(player, controls, layers, media) {
+            var t = this
+            if (typeof player.chapters == 'undefined') {
+                player.chapters =
+					$('<div class="mejs-chapters mejs-layer"></div>')
+						.prependTo(layers).hide();
+            }
+            if (typeof player.captions == 'undefined'){
+                player.captions =
+					$('<div class="mejs-captions-layer mejs-layer"><div class="mejs-captions-position mejs-captions-position-hover" role="log" aria-live="assertive" aria-atomic="false"><span class="mejs-captions-text"></span></div></div>')
+						.prependTo(layers).hide();
+            }
+            if (typeof player.captionsText == 'undefined'){
+                player.captionsText = player.captions.find('.mejs-captions-text');
+            }
+            if (typeof player.captionsButton == 'undefined'){
+                player.captionsButton =
+					$('<div class="mejs-button mejs-captions-button">'+
+						'<button type="button" aria-controls="' + t.id + '" title="' + t.options.tracksText + '" aria-label="' + t.options.tracksText + '"></button>'+
+						'<div class="mejs-captions-selector">'+
+                            '<ul class="vlcAudios"></ul>'+
+							'<ul class="srtSubs">'+
+								'<li>'+
+									'<input type="radio" name="' + player.id + '_captions" id="' + player.id + '_captions_none" value="none" checked="checked" />' +
+									'<label for="' + player.id + '_captions_none">' + mejs.i18n.t('None') +'</label>'+
+								'</li>' +
+							'</ul>'+
+                            '<ul class="vlcSubs"></ul>'	+
+						'</div>'+
+					'</div>')
+						.appendTo(controls).hide();
+            } else {
+                player.captionsButton.find('.mejs-captions-selector ul').addClass('srtSubs');
+                player.captionsButton.find('.mejs-captions-selector').prepend('<ul class="vlcAudios"></ul>');
+                player.captionsButton.find('.mejs-captions-selector').append('<ul class="vlcSubs"></ul>');
+            }
+            player.captionsButton.find('.vlcSubs').attr('name','subs').attr('id','subs')
+            player.captionsButton.find('.srtSubs').attr('name','subs').attr('id','subs')
+            player.captionsButton.find('.vlcAudios').attr('name','audios').attr('id','audios')
+            
+            t.media.addEventListener('loadedmetadata', function(e) {
+                if (t.media.pluginType == 'vlc' && !t.media.VLCtracksLoaded){
+                    t.media.VLCtracksLoaded = true;
+                    var api = t.media.pluginApi;
+                    if (api.subtitle.count){api.subtitle.track = 0;}
+                    api.video.subtitle = 0;
+                    //console.log('VLC Subtitles count:' + api.subtitle.count) 
+                    //console.log('VLC Audios count:' + api.audio.count)
+                    //console.log('VLC Version:' + api.VersionInfo)
+                    var audioCount = api.audio.count - 2
+                    if (audioCount < 0){audioCount = 0}
+                    var tracksCount = api.subtitle.count + api.audio.count;
+                    for (i=0; i<t.tracks.length; i++) {
+                        if (t.tracks[i].kind == 'subtitles') {
+                            tracksCount++;
+                        }
+                    }
+                    if (tracksCount > 0) {player.captionsButton.find('.mejs-captions-selector').show;}
+                    if (t.options.toggleCaptionsButtonWhenOnlyOne && tracksCount == 1){
+                        t.captionsButton.on('click',function() {
+                            if (api.video.subtitle == 0) {
+                                api.video.subtitle = 1;
+                            } else {
+                                api.video.subtitle = 0;
+                            }
+                        });
+                    } else {
+                        t.captionsButton.on('click',function() {});
+                        t.captionsButton.on('mouseenter focusin', function() {
+                            $(this).find('.mejs-captions-selector').css('visibility','visible');
+                        })
+                        t.captionsButton.on('click','.srtSubs input[type=radio]',function() {
+                            api.video.subtitle = 0;
+                            if (api.subtitle.count){api.subtitle.track = 0;}
+                            t.setTrack(this.value);
+                        });
+                        t.captionsButton.on('click','.vlcSubs input[type=radio]',function() {
+                            api.video.subtitle = parseInt(this.value);
+                            api.subtitle.track = parseInt(this.value);
+                            t.setTrack('none');
+                        });
+                        t.captionsButton.on('click','.vlcAudios input[type=radio]',function() {
+                            api.audio.track = parseInt(this.value);
+                        });
+                        t.captionsButton.on( 'mouseleave focusout', function() {
+                            $(this).find(".mejs-captions-selector").css("visibility","hidden");
+                        });
+                    }
+                    for (i=1; i<api.subtitle.count; i++) {
+                        var label = api.subtitle.description(i);
+                        t.captionsButton.find('ul.vlcSubs').append(
+                            $('<li>'+
+                                '<input type="radio" name="' + t.id + '_captions" id="' + t.id + '_captions_' + i + '" value="' + i + '" />' +
+                                '<label for="' + t.id + '_captions_' + i + '">' + label + '</label>'+
+                            '</li>')
+                        );
+                    }
+                    if (audioCount){
+                        var checked = " checked"
+                        for (i=1; i<api.audio.count; i++) {
+                            var label = api.audio.description(i)
+                            t.captionsButton.find('ul.vlcAudios').append(
+                                $('<li>'+
+                                    '<input type="radio" name="' + t.id + '_audios" id="' + t.id + '_audioss_' + i + '" value="' + i + '"' + checked + ' />' +
+                                    '<label for="' + t.id + '_audios_' + i + '">' + label + '</label>'+
+                                '</li>')
+                            );
+                            checked = ""
+                        }
+                    }
+                    t.adjustLanguageBox();
+                }
+            }, false);
+        }
+	});
+    mejs.PluginDetector.addVLC();
 })(mejs.$);
 (function($) {
-
-	// vlc
-    $.extend(mejs.MepDefaults, {
-
-        plugins: ['flash','silverlight','youtube','vimeo','vlc'],
-        
-	});
-
-	$.extend(mejs.plugins, {
-
-	vlc: [
-		{version: null, types: ['audio/mkv','audio/avi','video/mp4','video/m4v','video/mov','video/flv','video/rtmp','video/x-flv','audio/flv','audio/x-flv','audio/mp3','audio/m4a','audio/mpeg', 'video/youtube', 'video/x-youtube', 'application/x-mpegURL', 'video/webm']}
-	],
-
-	});
-	
-	$.extend(MediaElementPlayer.prototype, {
-
-/*        addTrack: function(src, srclang, kind, label){
-            t = this
-            t.tracks.push({
-				srclang: (srclang) ? srclang.toLowerCase() : '',
-				src: src,
-				kind: kind,
-				label: label || '',
-				entries: [],
-				isLoaded: false
-			});
+ 
+    $.extend(mejs.Utility, {
+        absolutizeUrl: function(url) {
+            return url;
         },
-        showTracks: function(){
-            t.buildtracks(t, t.controls, t.layers, t.media)
-                featureIndex = t.options.features.indexOf("tracks")
-                if (featureIndex > 0){
-                    prevFeature = t.options.features[featureIndex - 1]
-                }
-        },
-        addVLCsub: function(lang, label) {
-			var t = this;
 
-			t.captionsButton.find('ul').append(
-				$('<li>'+
-					'<input type="radio" name="' + t.id + '_captions" id="' + t.id + '_captions_' + lang + '" value="' + lang + '" disabled="disabled" />' +
-					'<label for="' + t.id + '_captions_' + lang + '">' + label + ' (loading)' + '</label>'+
-				'</li>')
-			);
-
-			t.adjustLanguageBox();
-
-			// remove this from the dropdownlist (if it exists)
-			t.container.find('.mejs-captions-translations option[value=' + lang + ']').remove();
-		}
-*/ 
-	});
-
+    });
 })(mejs.$);

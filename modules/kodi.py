@@ -69,9 +69,16 @@ class Kodi(object):
                 {'type': 'bool',
                  'label': 'Enable VOD (experimental)',
                  'name': 'kodi_vod_enabled'},
-                {'type': 'bool',
-                 'label': 'Try HTML5 player first?',
-                 'name': 'kodi_vod_html5_first'},
+                {'type': 'select',
+                 'label': 'Use HTML5 player?',
+                 'name': 'kodi_vod_html5_mode',
+                 'options': [ 
+                    {'name': 'Before plugins', 'value': "auto"},
+                    {'name': 'After plugins', 'value': "auto_plugin"},
+                    {'name': 'Always', 'value': "native"},
+                    {'name': 'Never', 'value': "shim"},
+                    ]
+                },
                 {'type': 'select',
                  'label': 'Plugin order',
                  'name': 'kodi_vod_plugin_order',
@@ -309,8 +316,8 @@ class Kodi(object):
                                 if y+1 == x:
                                     srclang = files['file'][y+1:x]
                                 else:
-                                    srclang = 'und'
-                                subtitles.append({'srclang':srclang,'label':srclang.upper(),'type':extension,'path':quote(files['file'])})
+                                    srclang = 'unk'
+                                subtitles.append({'srclang':srclang,'label':srclang.capitalize(),'type':extension,'path':quote(files['file'])})
                 
         except Exception, e:
             self.logger.exception(e)
@@ -350,7 +357,7 @@ class Kodi(object):
                         vlcCmd = vlcCmd + ' option ' + vlcOpt
 
                 vlcCmd = vlcCmd + " enabled"
-                file = vlcProtocol + '://' + vlcIp + ':' + vlcPort + '/' + vlcStream
+                #file = vlcProtocol + '://' + vlcIp + ':' + vlcPort + '/' + vlcStream
                 print vlcCmd
 
                 vlcUrl = vlcIp + ':' + str(htpc.settings.get('kodi_vlc_port')) 
@@ -374,11 +381,6 @@ class Kodi(object):
                 #    if xmldoc.firstChild.firstChild.nodeName == "error":
                 #        print "wal"
                         #self.logger.error("VLC error: " + str(xmldoc.firstChild.firstChild.firstChild.data))
-
-            if htpc.settings.get('kodi_vod_html5_first'):
-                mode = 'auto'
-            else:
-                mode = 'shim'
             
             features = ""
             qualities = "0:'Direct'"
@@ -392,7 +394,7 @@ class Kodi(object):
                         
         except Exception, e:
             self.logger.exception(e)
-            self.logger.error("Unable to fetch subtitle list")
+            self.logger.error("Unable to trasncode")
             return
             
         return htpc.LOOKUP.get_template('kodiplayer.html').render(
@@ -405,7 +407,7 @@ class Kodi(object):
             id=id,
             server=server,
             type=type,
-            mode=mode,
+            mode=htpc.settings.get('kodi_vod_html5_mode'),
             plugins="'" + htpc.settings.get('kodi_vod_plugin_order').replace(',',"','") + "'",
             features=features,
             qualities=qualities,
