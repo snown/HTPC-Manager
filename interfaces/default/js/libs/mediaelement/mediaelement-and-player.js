@@ -1057,6 +1057,7 @@ mejs.HtmlMediaElementShim = {
 				
 			for (i=0; i<mediaFiles.length; i++) {
 				// normal check
+                console.log(htmlMediaElement.canPlayType(mediaFiles[i].type))
 				if (mediaFiles[i].type == "video/m3u8" || htmlMediaElement.canPlayType(mediaFiles[i].type).replace(/no/, '') !== ''
 					// special case for Mac/Safari 5.0.3 which answers '' to canPlayType('audio/mp3') but 'maybe' to canPlayType('audio/mpeg')
 					|| htmlMediaElement.canPlayType(mediaFiles[i].type.replace(/mp3/,'mpeg')).replace(/no/, '') !== ''
@@ -1070,7 +1071,11 @@ mejs.HtmlMediaElementShim = {
 			
 			if (result.method === 'native') {
 				if (result.url !== null) {
-					htmlMediaElement.src = result.url;
+					try {
+                        htmlMediaElement.src = result.url;
+                    } catch(e) {
+                        
+                    }
 				}
 			
 				// if `auto_plugin` mode, then cache the native result but try plugins.
@@ -1089,13 +1094,13 @@ mejs.HtmlMediaElementShim = {
 				for (j=0; j<options.plugins.length; j++) {
 
 					pluginName = options.plugins[j];
-			
+                    console.log('testing' + pluginName)
 					// test version of plugin (for future features)
 					pluginVersions = mejs.plugins[pluginName];				
 					
 					for (k=0; k<pluginVersions.length; k++) {
 						pluginInfo = pluginVersions[k];
-					
+                        console.log('version' + type)
 						// test if user has the correct plugin version
 						
 						// for youtube/vimeo
@@ -1388,7 +1393,7 @@ mejs.HtmlMediaElementShim = {
 				break;
 			
 			case 'vlc':
-
+                console.log('createvlc')
 				if (mejs.MediaFeatures.isIE) {
 					specialIEContainer = document.createElement('div');
 					container.appendChild(specialIEContainer);
@@ -1486,7 +1491,6 @@ mejs.HtmlMediaElementShim = {
                             });
                             player.addEvent('MediaPlayerMediaChanged', function() {
                                 player.video.subtitle = 0;
-                                //createEvent(player, pluginMediaElement, 'timeupdate');
                             });
                             player.addEvent('MediaPlayerEncounteredError', function() {
                                 createEvent(player, pluginMediaElement, 'error');
@@ -4561,8 +4565,8 @@ if (typeof jQuery != 'undefined') {
 			t.setControlsSize();
 			t.isFullScreen = true;
 
-			t.container.find('.mejs-captions-text').css('font-size', screen.width / t.width * 1.00 * 100 + '%');
-			t.container.find('.mejs-captions-position').css('bottom', '45px');
+			//t.container.find('.mejs-captions-text').css('font-size', screen.width / t.width * 1.00 * 100 + '%');
+			//t.container.find('.mejs-captions-position').css('bottom', '45px');
 		},
 
 		exitFullScreen: function() {
@@ -4616,8 +4620,8 @@ if (typeof jQuery != 'undefined') {
 			t.setControlsSize();
 			t.isFullScreen = false;
 
-			t.container.find('.mejs-captions-text').css('font-size','');
-			t.container.find('.mejs-captions-position').css('bottom', '');
+			//t.container.find('.mejs-captions-text').css('font-size','');
+			//t.container.find('.mejs-captions-position').css('bottom', '');
 		}
 	});
 
@@ -5715,14 +5719,16 @@ $.extend(mejs.MepDefaults,
 })(mejs.$);
 (function($) { // vlc
     $.extend(mejs.MepDefaults, {plugins: ['flash','silverlight','youtube','vimeo','vlc']});
-	$.extend(mejs.plugins, {vlc: [{version: [2,0,0], types:['audio/mpeg','audio/x-mpeg','video/mpeg','video/x-mpeg','video/mpeg-system','video/x-mpeg-system','audio/mp4','audio/x-m4a','video/mp4','application/mpeg4-iod','application/mpeg4-muxcodetable','video/x-m4v','video/x-msvideo','application/ogg','video/ogg','application/x-ogg','application/x-vlc-plugin','video/x-ms-asf-plugin','video/x-ms-asf','application/x-mplayer2','video/x-ms-wmv','video/x-ms-wvx','audio/x-ms-wma','application/x-google-vlc-plugin','audio/wav','audio/x-wav','audio/3gpp','video/3gpp','audio/3gpp2','video/3gpp2','video/divx','video/flv','video/x-flv','application/x-matroska','video/x-matroska','audio/x-matroska','application/xspf+xml','audio/x-mpegurl','video/webm','audio/webm','application/vnd.rn-realmedia','audio/x-realaudio','audio/amr','audio/x-flac','audio/mkv','audio/avi','video/m4v','video/mov','video/rtmp','audio/flv','audio/x-flv','audio/mp3','audio/m4a','video/youtube','video/x-youtube','application/x-mpegURL','video/webm']}]});
+	$.extend(mejs.plugins, {vlc: [{version: [2,0,0], types:['video/sdp','audio/sdp','audio/mpeg','audio/x-mpeg','video/mpeg','video/x-mpeg','video/mpeg-system','video/x-mpeg-system','audio/mp4','audio/x-m4a','video/mp4','application/mpeg4-iod','application/mpeg4-muxcodetable','video/x-m4v','video/x-msvideo','application/ogg','video/ogg','application/x-ogg','application/x-vlc-plugin','video/x-ms-asf-plugin','video/x-ms-asf','application/x-mplayer2','video/x-ms-wmv','video/x-ms-wvx','audio/x-ms-wma','application/x-google-vlc-plugin','audio/wav','audio/x-wav','audio/3gpp','video/3gpp','audio/3gpp2','video/3gpp2','video/divx','video/flv','video/x-flv','application/x-matroska','video/x-matroska','audio/x-matroska','application/xspf+xml','audio/x-mpegurl','video/webm','audio/webm','application/vnd.rn-realmedia','audio/x-realaudio','audio/amr','audio/x-flac','audio/mkv','audio/avi','video/m4v','video/mov','video/rtmp','audio/flv','audio/x-flv','audio/mp3','audio/m4a','video/youtube','video/x-youtube','application/x-mpegURL','video/webm']}]});
     $.extend(mejs.PluginDetector, {
     
         addVLC: function() {
+            console.log('addvlc')
             if (typeof(this.nav.plugins) != 'undefined' && typeof this.nav.plugins['VLC Web Plugin'] == 'object') {
                 var description = this.nav.plugins['VLC Web Plugin'].description;
                 if (description && !(typeof this.nav.mimeTypes != 'undefined' && this.nav.mimeTypes['application/x-vlc-plugin'] && !this.nav.mimeTypes['application/x-vlc-plugin'].enabledPlugin)) {
                     this.plugins['vlc'] = [2,0,0]
+                    console.log('vlc2')
                     return
                 }
             } else if (window.ActiveXObject || "ActiveXObject" in window) {

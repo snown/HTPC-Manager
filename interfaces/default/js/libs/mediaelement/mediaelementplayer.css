@@ -1156,6 +1156,12 @@ object, video, embed {
     font-size: 28px;
     color: #fff;
 }
+.mejs-captions-position-hover {
+    bottom: none;
+}
+.mejs-captions-position{
+    bottom: none;
+}
 .mejs-captions-text {
     padding: 0px;
     background: transparent;
