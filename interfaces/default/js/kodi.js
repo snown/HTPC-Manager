@@ -238,8 +238,8 @@ function loadMovies(options) {
 }
 
 function playMovie(movieid) {
-        var serverid = $('#servers').children('option:selected').attr('value') 
-        window.open(WEBDIR + 'kodi/player/?type=movie&id=' + movieid +'&serverId='+ serverid + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
+        var serverID = $('#servers').children('option:selected').attr('value') 
+        window.open(WEBDIR + 'kodi/player/?type=movie&id=' + movieid +'&serverID='+ serverID + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
   return false;
 }
 
@@ -458,8 +458,8 @@ function loadEpisodes(options) {
 }
 
 function playEpisode(episodeid) {
-        var serverid = $('#servers').children('option:selected').attr('value')
-        window.open(WEBDIR + 'kodi/player/?type=episode&id=' + episodeid +'&serverId='+ serverid + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
+        var serverID = $('#servers').children('option:selected').attr('value')
+        window.open(WEBDIR + 'kodi/player/?type=episode&id=' + episodeid +'&serverID='+ serverID + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
   return false;
 }
 

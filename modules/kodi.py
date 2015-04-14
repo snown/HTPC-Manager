@@ -17,7 +17,8 @@ from htpc.helpers import get_image
 import logging
 from cherrypy.lib.auth2 import require
 import chardet
-from xml.dom import minidom
+from time import sleep
+import xml.etree.ElementTree as ET
 
 try:
     import pycaption
@@ -50,12 +51,12 @@ class Kodi(object):
         except Exception, e: pass
         try: KodiServers.sqlmeta.addColumn(IntCol('vlc_port'), changeSchema=True)
         except Exception, e: pass
-        try: KodiServers.sqlmeta.addColumn(IntCol('vlc_rtsp'), changeSchema=True)
+        try: KodiServers.sqlmeta.addColumn(IntCol('vlc_transcode_port'), changeSchema=True)
         except Exception, e: pass
         try: KodiServers.sqlmeta.addColumn(StringCol('vlc_password'), changeSchema=True)
         except Exception, e: pass
         KodiServers.sqlmeta.addColumnsFromDatabase()
-
+        
         htpc.MODULES.append({
             'name': 'KODI',
             'id': 'kodi',
@@ -73,7 +74,8 @@ class Kodi(object):
                  'label': 'Hide watched',
                  'name': 'kodi_hide_watched'},
                 {'type': 'bool',
-                 'label': 'Enable VOD (experimental)',
+                 'label': 'Enable VOD',
+                 'desc': 'Video on Demand is a <u>experimental feature</u> using a modified version of mediaelement.js that fallbacks to "VLC web plug-in" as additional player for exotic kinds of media.',
                  'name': 'kodi_vod_enabled'},
                 {'type': 'select',
                  'label': 'Use HTML5 player?',
@@ -97,9 +99,24 @@ class Kodi(object):
                     {'name': 'VLC,Silverlight,Flash', 'value': "vlc,silverlight,flash"},
                     ]
                 },
+                {'type': 'select',
+                 'label': 'Video URL',
+                 'name': 'kodi_vod_video_url',
+                 'options': [ 
+                    {'name': 'User/Pass on video URL', 'value': "plain"},
+                    # does not work with VLC web plug-in
+                    #{'name': 'Use a redirect', 'value': "redirect", 'selected': 'selected'},
+                    {'name': 'Use a proxy url', 'value': "proxy"}
+                    ]
+                },
+                {'type': 'text',
+                 'label': 'Proxy URL',
+                 'placeholder': 'http://someurl.com:8080/path',
+                 'desc': 'Passing on Kodi user & password on the video URL is unsecure, using the redirect will hide it from the source code but still unsecure, using a proxy (apache/nginx) to hide login information is the best alternative for security.',
+                 'name': 'kodi_vod_proxy'},
                 {'type': 'bool',
                  'label': 'Transcode with VLC (more experimental)',
-                 'desc': 'VLC must be running in background.<BR>Use command: vlc --intf http --http-port=xxxx --http-password=&lt;password&gt;<BR>(<a href="http://wiki.videolan.org/VLC_command-line_help" target="_blank">Command Line Help</a>)',
+                 'desc': 'VLC transcoding is a <u>very experimental and unsupported</u> feature that allow VOD to play media even with bandwidth limitation or absence of VOD plug-ins.',
                  'name': 'kodi_vlc_enabled'},
                 {'type': 'text',
                  'label': 'HTTP interface IP/Host',
@@ -109,8 +126,12 @@ class Kodi(object):
                  'name': 'kodi_vlc_port'},
                 {'type': 'password',
                  'label': 'Password',
-                 'desc': 'You can access the transcoding interface going http://vlc_ip_or_host:port/<BR>(leave user name blank)',
+                 'desc': 'VLC must be running in background.<BR>Use command: vlc --intf http --http-port=&lt;interface-port&gt; --http-password=&lt;password&gt; --rtsp-port=&lt;transcode-port&gt;<BR>(<a href="http://wiki.videolan.org/VLC_command-line_help" target="_blank">Command Line Help</a>)<BR><BR>You can access the transcoding interface going http://vlc_ip_or_host:port/<BR>(leave user name blank)',
                  'name': 'kodi_vlc_password'},
+                {'type': 'text',
+                 'label': 'HTTP transcode port',
+                 'value': 8001,
+                 'name': 'kodi_vlc_transcode_port'},
                 {'type': 'select',
                  'label': 'Default profile',
                  'name': 'kodi_vlc_default_profile',
@@ -122,10 +143,6 @@ class Kodi(object):
                     {'name': 'Profile 3', 'value': 3}
                     ]
                 },
-                {'type': 'text',
-                 'label': 'RTSP port',
-                 'value': 8554,
-                 'name': 'kodi_vlc_rtsp'},
                 {'type': 'bool',
                  'label': 'Transcode profile 1 enabled',
                  'name': 'kodi_vlc_transcode1_enabled'},
@@ -135,8 +152,22 @@ class Kodi(object):
                  'name': 'kodi_vlc_transcode1_name'},
                 {'type': 'text',
                  'label': 'Transcode Settings',
-                 'value': 'venc=ffmpeg,vcodec=h264,vb=384,height=120,width=160,fps=20,aenc=ffmpeg,acodec=mp3,ab=64,channels=1',
+                 'value': 'vcodec=VP80,vb=2000,acodec=vorb,ab=128,channels=2,samplerate=44100',
                  'name': 'kodi_vlc_transcode1_settings'},
+                {'type': 'select',
+                 'label': 'Muxer',
+                 'name': 'kodi_vlc_transcode1_muxer',
+                 'options': [ 
+                    {'name': 'Ogg', 'value': "ogg"},
+                    {'name': 'Webm', 'value': "webm", 'selected': 'selected'},
+                    {'name': 'Flv', 'value': "flv"},
+                    {'name': 'Mkv', 'value': "mkv"},
+                    {'name': 'Ts', 'value': "ts"},
+                    {'name': 'Ps', 'value': "ps"},
+                    {'name': 'Avi', 'value': "avi"},
+                    {'name': 'Asf', 'value': "asf"}
+                    ]
+                },
                 {'type': 'bool',
                  'label': 'Transcode profile 2 enabled',
                  'name': 'kodi_vlc_transcode2_enabled'},
@@ -146,8 +177,22 @@ class Kodi(object):
                  'name': 'kodi_vlc_transcode2_name'},
                 {'type': 'text',
                  'label': 'Transcode Settings',
-                 'value': 'venc=ffmpeg,vcodec=h264,vb=384,height=120,width=160,fps=20,aenc=ffmpeg,acodec=mp3,ab=64,channels=1',
+                 'value': 'vcodec=theo,vb=1024,fps=25,scale=0.5,acodec=vorb,ab=128,samplerate=44100,channels=2',
                  'name': 'kodi_vlc_transcode2_settings'},
+                {'type': 'select',
+                 'label': 'Muxer',
+                 'name': 'kodi_vlc_transcode2_muxer',
+                 'options': [ 
+                    {'name': 'Ogg', 'value': "ogg", 'selected': 'selected'},
+                    {'name': 'Webm', 'value': "webm"},
+                    {'name': 'Flv', 'value': "flv"},
+                    {'name': 'Mkv', 'value': "mkv"},
+                    {'name': 'Ts', 'value': "ts"},
+                    {'name': 'Ps', 'value': "ps"},
+                    {'name': 'Avi', 'value': "avi"},
+                    {'name': 'Asf', 'value': "asf"}
+                    ]
+                },
                 {'type': 'bool',
                  'label': 'Transcode profile 3 enabled',
                  'name': 'kodi_vlc_transcode3_enabled'},
@@ -157,8 +202,23 @@ class Kodi(object):
                  'name': 'kodi_vlc_transcode3_name'},
                 {'type': 'text',
                  'label': 'Transcode Settings',
-                 'value': 'venc=x264{keyint=75,ref=1,vbv-maxrate=512,vbv-bufsize=256,profile=baseline,bframes=0,no-cabac,no-interlaced,weightp=0,no-8x8dct,level=3},vcodec=h264,vb=512,fps=25,height=400,aenc=ffmpeg{aac-profile=low,strict=-2},acodec=mp4a,ab=128,channels=2,soverlay',
-                 'name': 'kodi_vlc_transcode3_settings'}
+                 'value': 'vcodec=h264,vb=800,width=640,height=480,acodec=mp3,ab=128,channels=2,samplerate=44100',
+                 'name': 'kodi_vlc_transcode3_settings'},
+                {'type': 'select',
+                 'label': 'Muxer',
+                 'name': 'kodi_vlc_transcode3_muxer',
+                 'desc': '<BR><a href="' + htpc.settings.get('app_webdir') + 'kodi/managevlc">Manage VLC transcode instances</a>',
+                 'options': [ 
+                    {'name': 'Ogg', 'value': "ogg"},
+                    {'name': 'Webm', 'value': "webm"},
+                    {'name': 'Flv', 'value': "flv", 'selected': 'selected'},
+                    {'name': 'Mkv', 'value': "mkv"},
+                    {'name': 'Ts', 'value': "ts"},
+                    {'name': 'Ps', 'value': "ps"},
+                    {'name': 'Avi', 'value': "avi"},
+                    {'name': 'Asf', 'value': "asf"}
+                    ]
+                }
             ]
         })
 
@@ -210,9 +270,9 @@ class Kodi(object):
                  'label': 'Password',
                  'name': 'kodi_server_vlc_password'},
                 {'type': 'text',
-                 'label': 'RTSP port',
-                 'value': 8554,
-                 'name': 'kodi_server_vlc_rtsp'}
+                 'label': 'HTTP transcode port',
+                 'value': 8001,
+                 'name': 'kodi_vlc_transcode_port'},
             ]
         })
         server = htpc.settings.get('kodi_current_server', 0)
@@ -223,41 +283,54 @@ class Kodi(object):
     def index(self):
         """ Generate page from template """
         return htpc.LOOKUP.get_template('kodi.html').render(scriptname='kodi')
-
-    #def _cp_dispatch(self, vpath):
-    #    if len(vpath) == 3 and vpath[0] == 'vfs':
-    #        self.videofile(vpath[1],vpath[2])
-
-    #@cherrypy.expose()
-    #@require()
-    #def videofile(self, server=None, videopath=None):
-    #    if server and videopath:
-    #        raise cherrypy.HTTPRedirect(self.url('', False, int(server)) + '/vfs/' + quote(videopath))
-    #    else:
-    #        return
     
     @cherrypy.expose()
     @require()
-    def player(self, type=None, id=None, serverId=None, transcode=None, start=None):
+    def managevlc(self):
+        """ Generate page from template """
+        return htpc.LOOKUP.get_template('managevlc.html').render(scriptname='managevlc')
+
+    #used for video file redirect, currently disabled
+    def _cp_dispatch(self, vpath):
+        if len(vpath) == 3 and vpath[0] == 'vfs':
+            self.videofile(vpath[1],vpath[2])
+
+    #used for video file redirect, currently disabled
+    @cherrypy.expose()
+    @require()
+    def videofile(self, server=None, videopath=None):
+        if server and videopath:
+            raise cherrypy.HTTPRedirect(self.url('', False, int(server)) + '/vfs/' + quote(videopath))
+        else:
+            return
+    
+    @cherrypy.expose()
+    @require()
+    def player(self, type=None, id=None, serverID=None, transcode=None, start=None):
         """ Generate page from template """
         """ Play a file in Browser """
-        url = self.url('',True, serverId)
-        try: # get movies/episodes info
+
+        # get movies/episodes info
+        try: 
+            serverInfo = KodiServers.selectBy(id=serverID).getOne()
+            
+            url = serverInfo.host + ':' + str(serverInfo.port) 
+            if serverInfo.username and serverInfo.password:
+                url = serverInfo.username + ':' + serverInfo.password + '@' + url
+            url = 'http://' + url 
+            
             kodi = Server(url + '/jsonrpc')
+            
             if type == 'movie':
                 properties = ['title', 'year', 'file', 'streamdetails']
                 result = kodi.VideoLibrary.GetMovieDetails(movieid=int(id),properties=properties)
                 title = result['moviedetails']['title'] + ' (' + str(result['moviedetails']['year']) + ')'
-                #file = htpc.WEBDIR + 'kodi/vfs/' + serverId + '/' + quote(result['moviedetails']['file'])
-                file = url + '/vfs/' + quote(result['moviedetails']['file'])
-                rawfile = result['moviedetails']['file']
+                rawFile = result['moviedetails']['file']
             elif type == 'episode':
                 properties = ['showtitle', 'episode', 'season', 'file', 'streamdetails']
                 result = kodi.VideoLibrary.GetEpisodeDetails(episodeid=int(id),properties=properties)
                 title = result['episodedetails']['showtitle'] + ' (' + str(result['episodedetails']['season']) + 'x' + str(result['episodedetails']['episode']) + ')'
-                #file = htpc.WEBDIR + 'kodi/vfs/' + serverId + '/' + quote(result['episodedetails']['file'])
-                file = url + '/vfs/' + quote(result['episodedetails']['file'])
-                rawfile = result['episodedetails']['file']
+                rawFile = result['episodedetails']['file']
             else:
                 return 
 
@@ -266,20 +339,41 @@ class Kodi(object):
             self.logger.error("Unable to fetch movie/episode info")
             return
 
-        try:  #get directory files and fetch subtitles
-            separator = rawfile.rfind('/') if rawfile.rfind('/') > rawfile.rfind('\\') else rawfile.rfind('\\')
-            path = rawfile[:separator + 1] 
-            fileList = kodi.Files.GetDirectory(directory=path)
+        #set some more variables
+        plugins = "'" + htpc.settings.get('kodi_vod_plugin_order').replace(',',"','") + "'"
+        mode = htpc.settings.get('kodi_vod_html5_mode')
+        vlcEnabled = htpc.settings.get('kodi_vlc_enabled')
+        videoSrc = htpc.settings.get('kodi_vod_video_url')
+        features = ""
+        qualities = "0:'Direct'"
+        duration = -1
+        currTime = -1
+        uniqueID = ''
 
+        if start == None: start = 0
+        if transcode == None: transcode = htpc.settings.get('kodi_vlc_default_profile')
+        
+        if videoSrc == 'plain':
+            videoUrl = url + '/vfs/' + quote(rawFile)
+        elif videoSrc == 'redirect':
+            videoUrl = htpc.WEBDIR + 'kodi/vfs/' + serverID + '/' + quote(rawFile)
+        elif videoSrc == 'proxy':
+            videoUrl = htpc.settings.get('kodi_vod_proxy') + '/' + quote(rawFile)
+            
+        #get directory files and fetch subtitles
+        try:  
+            separator = rawFile.rfind('/') if rawFile.rfind('/') > rawFile.rfind('\\') else rawFile.rfind('\\')
+            path = rawFile[:separator + 1] 
+            fileList = kodi.Files.GetDirectory(directory=path)
             subtitles=[]
             for files in fileList['files']:
                 x = files['file'].rfind('.')
                 if x: 
                     extension = files['file'][x+1:]
-                    if extension in ['smi','aqt','dks','jss','sub','pjs','psb','ssa','rt','srt','vtt','ssf','usf']:
-                        y = rawfile.rfind('.')
+                    if extension in ['smi','sami','dfxp','srt','vtt','ttml','scc']:
+                        y = rawFile.rfind('.')
                         if y:
-                            if files['file'].find(rawfile[:y]) == 0:
+                            if files['file'].find(rawFile[:y]) == 0:
                                 if y+1 == x: srclang = files['file'][y+1:x]
                                 else: srclang = 'unk'
                                 subtitles.append({'srclang':srclang,'label':srclang.capitalize(),'type':extension,'path':quote(files['file'])})
@@ -289,82 +383,150 @@ class Kodi(object):
             self.logger.error("Unable to fetch subtitle list")
             return
         
-        plugins = "'" + htpc.settings.get('kodi_vod_plugin_order').replace(',',"','") + "'"
-        mode = htpc.settings.get('kodi_vod_html5_mode')
-        vlcEnabled = htpc.settings.get('kodi_vlc_enabled')
-        
-        if transcode == None:
-            transcode = htpc.settings.get('kodi_vlc_default_profile')
-            
-        if int(transcode) > 0 and vlcEnabled and htpc.settings.get('kodi_vlc_transcode' + str(transcode) + '_enabled'):
-
-            if start == None: start = 0
-            serverInfo = KodiServers.selectBy(id=serverId).getOne()
-            
-            if serverInfo.vlc_enabled:
-                vlcIp = serverInfo.host
-                vlcRTSP = serverInfo.vlc_rtsp
-            else:
-                vlcIp = htpc.settings.get('kodi_vlc_ip')
-                vlcRTSP = str(htpc.settings.get('kodi_vlc_rtsp'))
-                
-            vlcStream = str(serverId) + '-' + type + '-' +str(id) + '-' + str(transcode)
-            vlcOutput = 'sout=#transcode{' + htpc.settings.get('kodi_vlc_transcode' + str(transcode) + '_settings') + '}:rtp{sdp=rtsp://:' + vlcRTSP + '/' + vlcStream + '.sdp,no-sap,caching=2000,no-mp4a-latm}'
-            #vlcCmd = 'in_play&input=' + quote(file) + '&option=no-sout-keep&option=' + quote('start-time=' + str(start) + '.000') + '&option=' + quote(vlcOutput)
-            vlcCmd = 'in_play&input=' + quote(file) + '&option=no-sout-keep' + '&option=' + quote(vlcOutput)
-            plugins = "'vlc'"
-            mode = "shim"
-            file = 'rtsp://' + vlcIp + ':' + vlcRTSP + '/' + vlcStream + '.sdp'
-            
-            vlcResult = self.vlcProxy(serverId, vlcCmd)
-            print vlcResult
-
-        features = ""
-        qualities = "0:'Direct'"
+        #vlc stuff
         if vlcEnabled:   
+            
+            #set player qualities
             for x in range(1, 4):            
                 if htpc.settings.get('kodi_vlc_transcode'+ str(x) +'_enabled'):
                     features = "'quality',"
                     qualities = qualities + "," + str(x) + ":'" + htpc.settings.get('kodi_vlc_transcode'+ str(x) +'_name') + "'"
+            
+            #transcode if needed
+            if int(transcode) > 0 and htpc.settings.get('kodi_vlc_transcode' + str(transcode) + '_enabled'):
+                
+                #create a uniqueID for this session if not already set
+                if cherrypy.session.get('uniqueID') is None:
+                    from uuid import uuid4 
+                    cherrypy.session['uniqueID'] = str(uuid4())
+                uniqueID = cherrypy.session.get('uniqueID')
 
+                #check if we should use global or server VLC
+                if serverInfo.vlc_enabled:
+                    vlcHost = serverInfo.host
+                    vlcTcPort = serverInfo.vlc_transcode_port
+                else:
+                    vlcHost = htpc.settings.get('kodi_vlc_ip')
+                    vlcTcPort = str(htpc.settings.get('kodi_vlc_transcode_port'))
+
+                #create VLC commands
+                vlcCmd = []
+                vlcMuxer = htpc.settings.get('kodi_vlc_transcode' + str(transcode) + '_muxer')
+                vlcExt = vlcMuxer
+                if vlcMuxer == 'flv':
+                    vlcMuxer = 'ffmpeg{mux=flv}'
+
+                #remove current transcode instance if exist
+                vlcCmd.append(quote('del ' + uniqueID))
+                #new transcode task
+                vlcCmd.append(quote('new ' + uniqueID + ' broadcast' +
+                    ' input ' + url + '/vfs/' + quote(rawFile) +
+                    ' output #transcode{' + htpc.settings.get('kodi_vlc_transcode' + str(transcode) + '_settings') + '}' +
+                    ':std{access=http,mux=' + vlcMuxer + ',dst=0.0.0.0:' + vlcTcPort + '/' + uniqueID + '.' + vlcExt + '}' +
+                    ' unloop enabled'))
+                #start the new instance
+                vlcCmd.append(quote('control ' + uniqueID + ' play 1'))
+                
+                #replace video URL with vlc URL
+                videoUrl = 'http://' + vlcHost + ':' + vlcTcPort + '/' + uniqueID + '.' + vlcExt
+                
+                #send the commands
+                vlcResult = self.vlcSendCmd(serverID, vlcCmd)
+                #if len(vlcResult['status']):
+                #    raise ValueError('Unable to create new transcode task')
+                duration = vlcResult['status'][uniqueID]['length']
+                currTime = vlcResult['status'][uniqueID]['time']
+                    
+        #return the player template with all needed variables
         return htpc.LOOKUP.get_template('kodiplayer.html').render(
-            scriptname='player',
             title=title,
-            file=file,
-            encodedfile=quote(file),
+            videoUrl=videoUrl,
             subtitles=subtitles,
-            id=id,
-            server=serverId,
-            type=type,
+            serverID=serverID,
             mode=mode,
             plugins=plugins,
             features=features,
             qualities=qualities,
-            #duration=duration,
-            #currTime=currTime,
-            quality=int(transcode)
+            quality=int(transcode),
+            duration=duration,
+            currTime=currTime,
+            uniqueID=uniqueID,
+            start=start,
+            transcode=transcode
         )
 
     @cherrypy.expose()
     @require()
-    def vlcProxy(self, serverId=None, vlcCmd=None):
-        serverInfo = KodiServers.selectBy(id=serverId).getOne()
-        if serverInfo.vlc_enabled:
-            vlcIp = serverInfo.host
-            vlcPwd = serverInfo.vlc_password
-            vlcPort = serverInfo.vlc_port
-        else:
-            vlcIp = htpc.settings.get('kodi_vlc_ip')
+    @cherrypy.tools.json_out()
+    def vlcSendCmd(self, serverID=None, vlcCmd=None, autoSelect='1'):
+        #force server
+        if serverID == '-1':
+            vlcHost = htpc.settings.get('kodi_vlc_ip')
             vlcPwd = htpc.settings.get('kodi_vlc_password')
             vlcPort = htpc.settings.get('kodi_vlc_port')
-
-        vlcUrl = vlcIp + ':' + str(vlcPort) 
+        elif autoSelect == '0':
+            serverInfo = KodiServers.selectBy(id=serverID).getOne()
+            if serverInfo.vlc_enabled:
+                vlcHost = serverInfo.host
+                vlcPwd = serverInfo.vlc_password
+                vlcPort = serverInfo.vlc_port
+            else:
+                return 'disabled'
+        else:
+            #are we using local or global vlc server?
+            serverInfo = KodiServers.selectBy(id=serverID).getOne()
+            if serverInfo.vlc_enabled:
+                vlcHost = serverInfo.host
+                vlcPwd = serverInfo.vlc_password
+                vlcPort = serverInfo.vlc_port
+            else:
+                vlcHost = htpc.settings.get('kodi_vlc_ip')
+                vlcPwd = htpc.settings.get('kodi_vlc_password')
+                vlcPort = htpc.settings.get('kodi_vlc_port')
+        
+        # build url for VLC
+        vlcUrl = vlcHost + ':' + str(vlcPort) 
         if vlcPwd: vlcUrl = ':' + vlcPwd + '@' + vlcUrl
         vlcUrl = 'http://' + vlcUrl 
-        print vlcUrl + '/requests/status.json?command=' + vlcCmd
+
+        result = {'command':[],'status':{}}
         try:
-            f = urllib.urlopen(vlcUrl + '/requests/status.json?command=' + vlcCmd)
-            return f.read()
+            #send the commands and retrive errors
+            if vlcCmd is not None:
+                if isinstance(vlcCmd, basestring): vlcCmd = [vlcCmd]
+                for cmd in vlcCmd:
+                    c = urllib.urlopen(vlcUrl + '/requests/vlm_cmd.xml?command=' + cmd) #,None,1)
+                    result['command'].append(ET.fromstring(c.read()).find('./error').text)
+                    sleep(0.5)
+            
+            #get status of vlm xml and convert to json
+            s = urllib.urlopen(vlcUrl + '/requests/vlm.xml')
+            for broadcast in ET.fromstring(s.read()).findall('./broadcast'):
+                brcEnabled = False
+                brcState = None
+                brcTime = None
+                brcLength = None
+                brcInputs = []
+                for input in broadcast.findall('./inputs/input'):
+                    brcInputs.append(unquote(input.text[input.text.find('/vfs/')+5:]))
+                if broadcast.attrib['enabled'] == 'yes':
+                    brcEnabled = True
+                instance = broadcast.find("./instances/*[@name='default']")
+                if instance is not None:
+                    brcState = instance.attrib['state']
+                    brcTime = round(int(instance.attrib['time']) / 1000000)
+                    brcLength = round(int(instance.attrib['length']) / 1000000)
+                    
+                result['status'][broadcast.attrib['name']] = {
+                    'enabled': brcEnabled,
+                    'state': brcState,
+                    'time': brcTime,
+                    'length': brcLength,
+                    'inputs': brcInputs
+                    }
+            
+            return result
+
         except Exception, e:
             self.logger.exception(e)
             self.logger.error("Unable to reach VLC server")
@@ -372,18 +534,18 @@ class Kodi(object):
 
     @cherrypy.expose()
     @require()
-    def subtitle(self, serverId=None, subpath=None):
-        f = urllib.urlopen(self.url('', True, serverId) + '/vfs/' + subpath)
+    def subtitle(self, serverID=None, subpath=None):
+        f = urllib.urlopen(self.url('', True, serverID) + '/vfs/' + subpath)
         sub = f.read()
         encoding = chardet.detect(sub)
         sub = sub.decode(encoding=encoding['encoding'], errors='ignore')
         
         if pycaption is None:
-            self.logger.info("Subtitle: " + unquote(subpath) + ", " + encoding['encoding'] + ", " + str(encoding['confidence']))
+            self.logger.debug("Subtitle: " + unquote(subpath) + ", " + encoding['encoding'] + ", " + str(encoding['confidence']))
             return sub
         else:
             reader = detect_format(sub)
-            self.logger.info("Subtitle: " + unquote(subpath) + ", " + encoding['encoding'] + ", " + str(encoding['confidence']) + ", " + str(reader))
+            self.logger.debug("Subtitle: " + unquote(subpath) + ", " + encoding['encoding'] + ", " + str(encoding['confidence']) + ", " + str(reader))
             if reader is None:
                 return sub
             else:
@@ -397,6 +559,20 @@ class Kodi(object):
     def webinterface(self):
         """ Generate page from template """
         raise cherrypy.HTTPRedirect(self.url('', True))
+
+    @cherrypy.expose()
+    @require()
+    def vlcwebinterface(self, serverID=None):
+        """ redirect to vlc webinterface """
+        if serverID is not None:
+            if int(serverID) > -1:
+                serverInfo = KodiServers.selectBy(id=serverID).getOne()
+                vlcHost = serverInfo.host
+                vlcPort = serverInfo.vlc_port
+            else:
+                vlcHost = htpc.settings.get('kodi_vlc_ip')
+                vlcPort = htpc.settings.get('kodi_vlc_port')
+            raise cherrypy.HTTPRedirect('http://' + vlcHost + ':' + str(vlcPort))
 
     @cherrypy.expose()
     @require()
@@ -446,7 +622,7 @@ class Kodi(object):
     @cherrypy.tools.json_out()
     def setserver(self, kodi_server_id, kodi_server_name, kodi_server_host, kodi_server_port,
             kodi_server_username=None, kodi_server_password=None, kodi_server_mac=None, kodi_server_starterport='',
-            kodi_server_vlc_port='', kodi_server_vlc_password='', kodi_server_vlc_rtsp='', kodi_server_vlc_enabled=''):
+            kodi_server_vlc_port='', kodi_server_vlc_password='', kodi_server_vlc_transcode_port='', kodi_server_vlc_enabled=''):
         """ Create a server if id=0, else update a server """
         
         if kodi_server_starterport == '':
@@ -457,10 +633,10 @@ class Kodi(object):
             kodi_server_vlc_port = None
         else:
             kodi_server_vlc_port = int(kodi_server_vlc_port)
-        if kodi_server_vlc_rtsp == '':
-            kodi_server_vlc_rtsp = None 
+        if kodi_server_vlc_transcode_port == '':
+            kodi_server_vlc_transcode_port = None 
         else:
-            kodi_server_vlc_rtsp = int(kodi_server_vlc_rtsp)
+            kodi_server_vlc_transcode_port = int(kodi_server_vlc_transcode_port)
         
         if kodi_server_id == "0":
             self.logger.debug("Creating kodi-Server in database")
@@ -475,7 +651,7 @@ class Kodi(object):
                         vlc_enabled=int(kodi_server_vlc_enabled),
                         vlc_port=kodi_server_vlc_port,
                         vlc_password=kodi_server_vlc_password,
-                        vlc_rtsp=kodi_server_vlc_rtsp
+                        vlc_transcode_port=kodi_server_vlc_transcode_port
                         )
                 self.changeserver(server.id)
                 return 1
@@ -497,7 +673,7 @@ class Kodi(object):
                 server.vlc_enabled = int(kodi_server_vlc_enabled)
                 server.vlc_port = kodi_server_vlc_port
                 server.vlc_password = kodi_server_vlc_password
-                server.vlc_rtsp = kodi_server_vlc_rtsp
+                server.vlc_transcode_port = kodi_server_vlc_transcode_port
                 return 1
             except SQLObjectNotFound, e:
                 self.logger.error("Unable to update kodi-Server " + server.name + " in database")

@@ -1,31 +1,23 @@
-var player = ""
+var player = "";
+var unloaded = false;
 
 function vlcProxy(vlcCmd){
- /*
- ?command=audio_track&val=<val>   
- ?command=subtitle_track&val=<val>
- > toggle pause. If current state was 'stop', play item <id>, if no <id> specified, play current item. If no current item, play 1st item in the playlist:
-  ?command=pl_pause&id=<id>
-
-> resume playback if paused, else do nothing
-  ?command=pl_forceresume
-
-> pause playback, do nothing if already paused
-  ?command=pl_forcepause
-
-> stop playback:
-  ?command=pl_stop
-> seek to <val>:
-  ?command=seek&val=<val>
-  Allowed values are of the form:
-    [+ or -][<int><H or h>:][<int><M or m or '>:][<int><nothing or S or s or ">]
-    or [+ or -]<int>%
-    (value between [ ] are optional, value between < > are mandatory)
-  examples:
-    1000 -> seek to the 1000th second
-    +1H:2M -> seek 1 hour and 2 minutes forward
-    -10% -> seek 10% back
-*/
+    if (transcode > 0){
+         if (vlcCmd) {
+            vlcCmd = '&vlcCmd=' + encodeURIComponent(vlcCmd)
+         } else {
+            vlcCmd = ''
+         }
+         $.ajax({
+          dataType: "json",
+          url: WEBDIR + 'kodi/vlcSendCmd?serverID=' + serverID + vlcCmd,
+          success: function(data){
+            if (!unloaded){
+                player.options.duration = data.status[uniqueID]['length']
+            }
+          }
+        });
+    }
 }
 
 function doResize(subsOnly){
@@ -79,7 +71,20 @@ $(document).ready(function() {
             usePluginFullScreen: false,
             keyActions: [],
             success: function(){vlcProxy(''); doResize(true)},
+            duration: duration,
             customError: '<a href="">Download</a><BR />'
     });
     $(window).resize(function(){doResize(false)});
 });
+window.onunload = function(){
+  if (!unloaded && transcode > 0){
+    unloaded = true;
+    vlcProxy('del ' + uniqueID);
+  }
+};
+window.onbeforeunload = function(){
+  if (!unloaded && transcode > 0){
+    unloaded = true;
+    vlcProxy('del ' + uniqueID);
+  }
+};
