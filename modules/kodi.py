@@ -112,7 +112,7 @@ class Kodi(object):
                 {'type': 'text',
                  'label': 'Proxy URL',
                  'placeholder': 'http://someurl.com:8080/path',
-                 'desc': 'Passing on Kodi user & password on the video URL is unsecure, using the redirect will hide it from the source code but still unsecure, using a proxy (apache/nginx) to hide login information is the best alternative for security.',
+                 'desc': "Passing on Kodi user & password on the video URL is unsecure and dosen't work on IE, using a proxy (apache/nginx) to hide login information is the best alternative for security and compatibility.",
                  'name': 'kodi_vod_proxy'},
                 {'type': 'bool',
                  'label': 'Transcode with VLC (more experimental)',
