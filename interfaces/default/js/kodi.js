@@ -217,13 +217,6 @@ function loadMovies(options) {
 
                     movieAnchor.append($('<h6>').addClass('title').html(shortenText(movie.title, 12)));
 
-                    if (kodi_vod_enabled){
-                        movieItem.append($('<h6>').addClass('title').append($('<a>').attr('href', '#').html("Play in Browser").click(function(e) {
-                            e.preventDefault();
-                            playMovie(movie.movieid);
-                        })));
-                    }
-
                     movieItem.append(movieAnchor);
 
                     $('#movie-grid').append(movieItem);
@@ -235,12 +228,6 @@ function loadMovies(options) {
             $('.spinner').hide();
         }
     });
-}
-
-function playMovie(movieid) {
-        var serverID = $('#servers').children('option:selected').attr('value') 
-        window.open(WEBDIR + 'kodi/player/?type=movie&id=' + movieid +'&serverID='+ serverID + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
-  return false;
 }
 
 function loadMovie(movie) {
@@ -271,6 +258,15 @@ function loadMovie(movie) {
             playItem(movie.movieid, 'movie');
             hideModal();
         }
+    }
+    if (kodi_vod_enabled){
+        $.extend(buttons,{
+            'Play in Browser' : function(){
+                window.open(WEBDIR + 'kodi/player/?type=movie&id=' + movie.movieid +'&serverID='+ $('#servers').children('option:selected').attr('value') +
+                                '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no"
+                            );
+            }
+        });
     }
     if (movie.imdbnumber) {
         $.extend(buttons,{
@@ -420,7 +416,7 @@ function loadEpisodes(options) {
 
                     var episodeAnchor = $('<a>').attr('href', '#').click(function(e) {
                         e.preventDefault();
-                        playItem(episode.episodeid, 'episode');
+                        loadEpisode(episode);
                     });
 
                     var src = 'holder.js/150x85/text:No artwork';
@@ -434,13 +430,6 @@ function loadEpisodes(options) {
                     }
 
                     episodeAnchor.append($('<h6>').addClass('title').html(shortenText(episode.label, 18)));
-
-                    if (kodi_vod_enabled) {
-                        episodeItem.append($('<h6>').addClass('title').append($('<a>').attr('href', '#').html("Play in Browser").click(function(e) {
-                            e.preventDefault();
-                            playEpisode(episode.episodeid);
-                        })));
-                    }
 
                     episodeItem.append(episodeAnchor);
                     
@@ -457,10 +446,28 @@ function loadEpisodes(options) {
     $('#episode-grid').slideDown()
 }
 
-function playEpisode(episodeid) {
-        var serverID = $('#servers').children('option:selected').attr('value')
-        window.open(WEBDIR + 'kodi/player/?type=episode&id=' + episodeid +'&serverID='+ serverID + '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no");
-  return false;
+function loadEpisode(episode) {
+    var poster = WEBDIR + 'kodi/GetThumb?w=200&h=300&thumb='+encodeURIComponent(episode.thumbnail)
+    var info = $('<div>');
+    info.append($('<p>').html('<b>Plot:</b> ' + episode.plot));
+    var buttons = {
+        'Play' : function() {
+            playItem(episode.episodeid, 'episode');
+            hideModal();
+        }
+    }
+    if (kodi_vod_enabled){
+        $.extend(buttons,{
+            'Play in Browser' : function(){
+                window.open(WEBDIR + 'kodi/player/?type=episode&id=' + episode.episodeid +'&serverID='+ $('#servers').children('option:selected').attr('value') +
+                                '&transcode=' + vlc_transcode, 'video_player', "menubar=no,location=no,resizable=yes,scrollbars=no,status=no"
+                            );
+            }
+        });
+    }
+    showModal(episode.showtitle + ' (' + episode.season + 'x' + episode.episode + ')', $('<div>').append(        
+        info
+    ), buttons);
 }
 
 var artistLoad = {
