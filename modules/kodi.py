@@ -75,7 +75,7 @@ class Kodi(object):
                  'name': 'kodi_hide_watched'},
                 {'type': 'bool',
                  'label': 'Enable VOD',
-                 'desc': 'Video on Demand is a <u>experimental feature</u> using a modified version of mediaelement.js that fallbacks to "VLC web plug-in" as additional player for exotic kinds of media.',
+                 'desc': 'Video on Demand is a <u>experimental feature</u> using a modified version of mediaelement.js that fallbacks to "VLC web plug-in" as additional player for exotic kinds of media.<BR>VOD is NOT supported on Internet Explorer',
                  'name': 'kodi_vod_enabled'},
                 {'type': 'select',
                  'label': 'Use HTML5 player?',
@@ -122,7 +122,7 @@ class Kodi(object):
                  'label': 'HTTP interface IP/Host',
                  'name': 'kodi_vlc_ip'},
                 {'type': 'text',
-                 'label': 'Port',
+                 'label': 'Interface Port',
                  'name': 'kodi_vlc_port'},
                 {'type': 'password',
                  'label': 'Password',
@@ -207,7 +207,7 @@ class Kodi(object):
                 {'type': 'select',
                  'label': 'Muxer',
                  'name': 'kodi_vlc_transcode3_muxer',
-                 'desc': '<BR><a href="' + htpc.settings.get('app_webdir') + 'kodi/managevlc">Manage VLC transcode instances</a>',
+                 'desc': '<BR><a href="' + htpc.WEBDIR + 'kodi/managevlc">Manage VLC transcode instances</a>',
                  'options': [ 
                     {'name': 'Ogg', 'value': "ogg"},
                     {'name': 'Webm', 'value': "webm"},
@@ -769,7 +769,7 @@ class Kodi(object):
         try:
             kodi = Server(self.url('/jsonrpc', True))
             sort = {'order': sortorder, 'method': sortmethod, 'ignorearticle': True}
-            properties = ['episode', 'season', 'thumbnail', 'plot', 'file', 'playcount']
+            properties = ['episode', 'season', 'thumbnail', 'plot', 'file', 'playcount', 'showtitle']
             limits = {'start': int(start), 'end': int(end)}
             filter = {'field': 'title', 'operator': 'contains', 'value': filter}
             if hidewatched == "1":

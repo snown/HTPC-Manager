@@ -165,11 +165,15 @@
     </div>
 </div>
 <script>
-  % if settings.get('kodi_vod_enabled'): 
-    kodi_vod_enabled = true;
-  % else:
+% if settings.get('kodi_vod_enabled'): 
+    if (navigator.userAgent.indexOf('MSIE') > 0 || navigator.userAgent.indexOf('Trident/') > 0 || navigator.userAgent.indexOf('Edge/') > 0){
+        kodi_vod_enabled = false;
+    } else {
+        kodi_vod_enabled = true;
+    }
+% else:
     kodi_vod_enabled = false;
-  % endif
+% endif
 <% 
 vlcDefaultProfile = settings.get('kodi_vlc_default_profile')
 if vlcDefaultProfile > 0 and settings.get('kodi_vlc_enabled') and settings.get('kodi_vlc_transcode' + str(vlcDefaultProfile) + '_enabled'):
