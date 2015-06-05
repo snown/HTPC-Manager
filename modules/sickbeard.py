@@ -70,7 +70,7 @@ class Sickbeard(object):
             if not sickbeard_basepath:
                 sickbeard_basepath = fix_basepath(sickbeard_basepath)
 
-            url = "http%s://%s:%s%sapi/%s/?cmd=sb.ping" % (ssl, striphttp(sickbeard_host), sickbeard_port, sickbeard_apikey)
+            url = "http%s://%s:%s/api/%s/?cmd=sb.ping" % (ssl, striphttp(sickbeard_host), sickbeard_port, sickbeard_apikey)
 
             self.logger.debug("Trying to contact sickbeard via " + url)
             response = loads(urlopen(url, timeout=10).read())
